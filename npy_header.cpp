@@ -1,6 +1,7 @@
 #include <iostream> // std::cout
 #include <cstring> // std::size_t
 #include <vector>
+#include <tuple> // std::get, std::tie
 // #include <array> // 
 
 namespace npy {
@@ -121,4 +122,9 @@ int main(){
     2. Presumably you need a general template before you define specialised templates?
     3. The templating of has_typestring seems very verbose and repeated... why do you think
         the author wrote it this way? is there a cleaner way to write this?
+    4. When using objects/functions within the std namespace, is it best practice to always write
+        std::your_method, or to just declare using namespace std at the top?
+    5. Is there any best practice for which case you use, e.g. camelCase vs PascalCase vs snake_case?
+    6. Best practice for long amount of func args? use a struct instead?
+    7. Linters?
 */
