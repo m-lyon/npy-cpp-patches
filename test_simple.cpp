@@ -1,5 +1,5 @@
 
-#include "patcher.hpp"
+#include "patcher_simple.hpp"
 #include <vector>
 #include <string>
 
@@ -22,15 +22,15 @@ int main(){
     vector<size_t> patch_shape {2, 2};
     vector<size_t> patch_num {0, 0};
 
-    Patcher<long> patcher;
+    SimplePatcher<long> patcher;
 
-    vector<long> patch = patcher.get_patch(fpath, qspace_index, patch_shape, patch_num);
+    vector<long> patch = patcher.get_patch(fpath);
 
-    vector<size_t> ans = patcher.get_data_shape();
-    size_t total_size = patcher.get_patch_size();
-    cout << total_size << endl;
+    // vector<size_t> ans = patcher.get_data_shape();
+    // size_t total_size = patcher.get_patch_size();
+    // cout << total_size << endl;
     print_vector(patch);
-    print_vector(ans);
+    // print_vector(ans);
 
 
     return 0;

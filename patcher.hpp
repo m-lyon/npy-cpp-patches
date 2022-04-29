@@ -3,6 +3,15 @@
 
 #include "npy.hpp"
 
+template<typename T>
+void debug_vector(std::vector<T> &data){
+    for (auto i: data){
+        std::cout << i << ',';
+    }
+    std::cout << std::endl;
+}
+
+
 /**
  * @brief Patcher object
  * 
@@ -34,6 +43,7 @@ class Patcher{
         void close_file();
 
     public:
+        Patcher();
         std::vector<T> get_patch(
             std::string&, std::vector<size_t>&, std::vector<size_t>, std::vector<size_t>
         );
@@ -41,6 +51,10 @@ class Patcher{
         std::vector<size_t> get_data_shape();
         std::vector<size_t> get_padding();
 };
+
+
+template<typename T>
+Patcher<T>::Patcher(){}
 
 
 /**
@@ -85,6 +99,9 @@ void Patcher<T>::open_file(){
     npy::header_t header = npy::parse_header(header_s);
     data_shape = header.shape;
     std::reverse(data_shape.begin(), data_shape.end());
+    if (!stream) {
+        throw std::runtime_error("IO Error: failed to open " + filepath);
+    }
 }
 
 
@@ -95,7 +112,10 @@ void Patcher<T>::open_file(){
  */
 template<typename T>
 void Patcher<T>::close_file(){
-    stream.close();
+    if (!stream) {
+        stream.close();
+        throw std::runtime_error("Failed to get patch within " + filepath);
+    }
 }
 
 
@@ -148,7 +168,7 @@ std::vector<size_t> Patcher<T>::get_padding(){
 template<typename T>
 void Patcher<T>::set_patch_size(){
     patch_size = 1;
-    for (auto i: patch_shape){
+    for (size_t i: patch_shape){
         patch_size *= i;
     }
     patch_size *= qspace_index.size();
@@ -177,7 +197,7 @@ void Patcher<T>::set_strides(){
     strides.resize(patch_shape.size() + 1, 0);
 
     strides[0] = sizeof(T); // 0th dimension moves linearly
-    for (int i = 1; i <= patch_shape.size(); i++){
+    for (size_t i = 1; i <= patch_shape.size(); i++){
         strides[i] = data_shape[i-1] * strides[i-1];
     }
 
@@ -192,7 +212,7 @@ void Patcher<T>::set_strides(){
 template<typename T>
 void Patcher<T>::set_num_patches(){
     num_patches.resize(data_shape.size() - 1);
-    for (int i = 0; i < num_patches.size(); i++){
+    for (size_t i = 0; i < num_patches.size(); i++){
         num_patches[i] = (data_shape[i] + padding[2*i] + padding[(2*i)+1]) / patch_shape[i];
     }
 }
@@ -204,10 +224,10 @@ void Patcher<T>::set_num_patches(){
  */
 template<typename T>
 void Patcher<T>::move_stream_to_start(){
-    int i = 0;
+    size_t i = 0;
     pos = 0;
     // get relative position of patched dims
-    for (i; i < patch_shape.size(); i++){
+    for (;i < patch_shape.size(); i++){
         if (patch_num[i] != 0){
             // shift minus the padding
             pos += (strides[i] * patch_num[i] * patch_shape[i]) - (strides[i] * padding[2*i]); 
@@ -215,7 +235,7 @@ void Patcher<T>::move_stream_to_start(){
     }
     pos += (qspace_index[0] * strides[i]); // qdim
     pos += start;
-    stream.seekg(start + pos, stream.beg);
+    stream.seekg(pos, stream.beg);
 }
 
 
@@ -228,7 +248,7 @@ template<typename T>
 void Patcher<T>::set_shift_lengths(){
     shifts.resize(patch_shape.size(), 0);
 
-    for (int i = 0; i < shifts.size(); i++){
+    for (size_t i = 0; i < shifts.size(); i++){
         shifts[i] = strides[i] * patch_shape[i];
         // If start of patch
         if (patch_num[i] == 0){
@@ -264,14 +284,14 @@ template<typename T>
 void Patcher<T>::read_patch(){
     move_stream_to_start();
     // get data pointer as char pointer
-    buf = reinterpret_cast<char *>(patch.data());
+    buf = reinterpret_cast<char*>(patch.data());
     const unsigned int dim = patch_shape.size();
-    for (int i = 0; i < qspace_index.size() - 1; i++){
+    for (size_t i = 0; i < qspace_index.size() - 1; i++){
         read_nd_slice(dim - 1);
         pos -= shifts[dim - 1];
         pos += ((qspace_index[i + 1] - qspace_index[i]) * strides.back());
         stream.seekg(pos, stream.beg);
-        std::cout << "we've just read dim " << dim << " index " << i << ", moving stream ptr " << ((qspace_index[i + 1] - qspace_index[i]) * strides.back()) - shifts[dim - 1] << " bytes." << std::endl;
+        // std::cout << "we've just read dim " << dim << " index " << i << ", moving stream ptr " << ((qspace_index[i + 1] - qspace_index[i]) * strides.back()) - shifts[dim - 1] << " bytes." << std::endl;
     }
     read_nd_slice(dim - 1); // last slice
 }
@@ -287,36 +307,35 @@ template<typename T>
 void Patcher<T>::read_nd_slice(const unsigned int dim){
     if (dim == 0){
         if ((patch_num[dim] == 0) && (padding[2 * dim] > 0)){
-            std::cout << "we're at the left padded region in dim " << dim << ", shifting data ptr forward " << strides[dim] * padding[2 * dim] << " bytes." << std::endl;
+            // std::cout << "we're at the left padded region in dim " << dim << ", shifting data ptr forward " << strides[dim] * padding[2 * dim] << " bytes." << std::endl;
             buf += strides[dim] * padding[2 * dim];
         }
         // Read and shift pointers
         stream.read(buf, shifts[0]);
         buf += shifts[0];
-        printf("Address of x is %p\n", (void *)buf);
         pos += shifts[0];
-        std::cout << "after reading " << shifts[0] << " bytes, moving data ptr and (implicitly) stream forward " << shifts[0] << " bytes." << std::endl;
+        // std::cout << "after reading " << shifts[0] << " bytes, moving data ptr and (implicitly) stream forward " << shifts[0] << " bytes." << std::endl;
         if ((patch_num[dim] == num_patches[dim]) && (padding[(2 * dim) + 1] > 0)){
-            std::cout << "we're at the right padded region in dim " << dim << ", moving data ptr forward " << shifts[dim] << " bytes." << std::endl;
+            // std::cout << "we're at the right padded region in dim " << dim << ", moving data ptr forward " << shifts[dim] << " bytes." << std::endl;
             buf += shifts[dim];
         }
         return;
     }
     if (dim < patch_shape.size()){
-        for (int i = 0; i < (patch_shape[dim]); i++){
+        for (size_t i = 0; i < (patch_shape[dim]); i++){
             // If at first patch, and i is within left padded region
             if ((patch_num[dim] == 0) && (i < padding[2 * dim])){
-                std::cout << "we're at the left padded region in dim " << dim << ", shifting data ptr forward " << strides[dim] * padding[2 * dim] << " bytes." << std::endl;
+                // std::cout << "we're at the left padded region in dim " << dim << ", shifting data ptr forward " << strides[dim] * padding[2 * dim] << " bytes." << std::endl;
                 buf += strides[dim] * padding[2 * dim];
             // If at end patch, and i is within right padded region
             } else if ((patch_num[dim] == num_patches[dim]) && (i >= patch_shape[dim] - padding[(2 * dim) + 1] - 1)){
-                std::cout << "we're at the right padded region in dim " << dim << ", moving data ptr forward " << strides[dim] * padding[(2 * dim) + 1] << " bytes." << std::endl;
+                // std::cout << "we're at the right padded region in dim " << dim << ", moving data ptr forward " << strides[dim] * padding[(2 * dim) + 1] << " bytes." << std::endl;
                 buf += strides[dim] * padding[(2 * dim) + 1];
             } else {
                 read_nd_slice(dim - 1);
                 pos = pos - shifts[dim - 1] + strides[dim]; // Shift stream position.
                 stream.seekg(pos, stream.beg);
-                std::cout << "we've just read dim " << dim << " index " << i << ", moving stream ptr forward " << strides[dim] - shifts[dim - 1] << " bytes." << std::endl;
+                // std::cout << "we've just read dim " << dim << " index " << i << ", moving stream ptr forward " << strides[dim] - shifts[dim - 1] << " bytes." << std::endl;
             }
         }
     }

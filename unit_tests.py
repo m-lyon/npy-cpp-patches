@@ -1,7 +1,9 @@
+'''Testing Patcher class'''
+import os
 import unittest
 import numpy as np
 
-from example import get_patch_c_order_double
+from example import PatcherDouble, PatcherFloat
 
 
 def get_test_data_one(filepath):
@@ -97,18 +99,43 @@ def get_test_data_five(filepath):
     return patch_shape, qspace_index, patch_num, data_out
 
 
-class TestPatcherOne(unittest.TestCase):
+class BaseTestCases:
+    
+    class BaseTest(unittest.TestCase):
+        # pylint: disable=no-member,attribute-defined-outside-init
 
-    def setUp(self) -> None:
+        def setUp(self) -> None:
+            self.set_up_vars()
+            self.patch_shape, self.qspace_index, self.patch_num, self.data_out = get_test_data_one(
+                self.filepath
+            )
+
+        def tearDown(self):
+            os.remove(self.filepath)
+
+        def set_up_vars(self):
+            raise NotImplementedError
+
+        def test_patch(self):
+            self.data_out_test = self.patcher.get_patch(
+                self.filepath, self.qspace_index, self.patch_shape, self.patch_num
+            )
+            data_shape = self.patcher.get_data_shape()
+            self.data_out_test = np.array(self.data_out_test).reshape(data_shape)
+            self.assertTrue(np.array_equal(self.data_out, self.data_out_test))
+
+
+class TestPatcherOne(BaseTestCases.BaseTest):
+
+    def set_up_vars(self):
         self.filepath = 'test_data_one.npy'
-        self.patch_shape, self.qspace_index, self.patch_num, self.data_out = get_test_data_one(self.filepath)
+        self.patcher = PatcherDouble()
 
-    def test_one(self):
-        self.data_out_test = get_patch_c_order_double(
-            self.filepath, self.qspace_index, self.patch_shape, self.patch_num)
-        self.data_out_test = np.array(self.data_out_test).reshape([1, 3, 3])
+class TestPatcherTwo(BaseTestCases.BaseTest):
 
-        self.assertTrue(np.array_equal(self.data_out, self.data_out_test))
+    def set_up_vars(self):
+        self.filepath = 'test_data_two.npy'
+        self.patcher = PatcherFloat()
 
 
 if __name__ == '__main__':
