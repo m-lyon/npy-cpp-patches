@@ -1,9 +1,12 @@
+import unittest
 import numpy as np
+
+from example import get_patch_c_order_double
 
 
 def get_test_data_one(filepath):
     '''Testing: Simple test, shame input and output data
-    
+
     Datatype: double
     Padding required: None
     '''
@@ -11,7 +14,7 @@ def get_test_data_one(filepath):
     np.save(filepath, data_in, allow_pickle=False)
     data_out = np.arange(9).reshape(1, 3, 3).astype(np.double)
     patch_shape = (3, 3)
-    qspace_index = np.array([0])
+    qspace_index = [0]
     patch_num = (0, 0)
 
     return patch_shape, qspace_index, patch_num, data_out
@@ -19,7 +22,7 @@ def get_test_data_one(filepath):
 
 def get_test_data_two(filepath):
     '''Testing: padding required, getting patch at one edge
-    
+
     Datatype: float
     Padding required: (1, 1, 1, 1)
     '''
@@ -28,7 +31,7 @@ def get_test_data_two(filepath):
     np.save(filepath, data_in, allow_pickle=False)
     data_out = np.array([[[0, 42, 3], [0, 42, 6], [0, 42, 42]]]).astype(np.float32)
     patch_shape = (3, 3)
-    qspace_index = np.array([0])
+    qspace_index = [0]
     patch_num = (0, 1)
 
     return patch_shape, qspace_index, patch_num, data_out
@@ -36,7 +39,7 @@ def get_test_data_two(filepath):
 
 def get_test_data_three(filepath):
     '''Testing: more complex qspace indexing
-    
+
     Datatype: int
     Padding required: (1, 1, 1, 1)
     '''
@@ -92,3 +95,21 @@ def get_test_data_five(filepath):
     qspace_index = np.array([5, 0])
 
     return patch_shape, qspace_index, patch_num, data_out
+
+
+class TestPatcherOne(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.filepath = 'test_data_one.npy'
+        self.patch_shape, self.qspace_index, self.patch_num, self.data_out = get_test_data_one(self.filepath)
+
+    def test_one(self):
+        self.data_out_test = get_patch_c_order_double(
+            self.filepath, self.qspace_index, self.patch_shape, self.patch_num)
+        self.data_out_test = np.array(self.data_out_test).reshape([1, 3, 3])
+
+        self.assertTrue(np.array_equal(self.data_out, self.data_out_test))
+
+
+if __name__ == '__main__':
+    unittest.main()
