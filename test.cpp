@@ -1,4 +1,3 @@
-
 #include "patcher.hpp"
 #include <vector>
 #include <string>
@@ -17,14 +16,14 @@ void print_vector(vector<T> &data){
 
 int main(){
 
-    string fpath = "data2.npy";
-    vector<size_t> qspace_index {0, 1};
-    vector<size_t> patch_shape {2, 2};
-    vector<size_t> patch_num {0, 0};
+    string fpath = "test_data_two.npy";
+    vector<size_t> qspace_index {0};
+    vector<size_t> patch_shape {3, 3};
+    vector<size_t> patch_num {0, 1};
 
-    Patcher<long> patcher;
+    Patcher<float> patcher;
 
-    vector<long> patch = patcher.get_patch(fpath, qspace_index, patch_shape, patch_num);
+    vector<float> patch = patcher.get_patch(fpath, qspace_index, patch_shape, patch_num);
 
     vector<size_t> ans = patcher.get_data_shape();
     size_t total_size = patcher.get_patch_size();
