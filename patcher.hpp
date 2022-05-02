@@ -5,16 +5,41 @@
 
 // TODO: Rewrite npy header reading code. Include check to make sure data dtypes
 // between the header and the used class match.
+// TODO: remove debug code
 
 template<typename T>
 void debug_vector(std::vector<T> &data, std::string name){
     std::cout << name << std::endl << "[";
-    for (int i = 0; i < data.size() - 1; i++){
+    for (size_t i = 0; i < data.size() - 1; i++){
         std::cout << data[i] << ", ";
     }
     std::cout << data.back() << "]" << std::endl;
 }
 
+
+// void test_stream(std::ifstream& stream, int max_size, size_t pos){
+//     if (pos >= max_size){
+//         throw std::runtime_error("assumed position over length of file");
+//     }
+//     int debug_pos = stream.tellg();
+//     if (debug_pos >= max_size){
+//         throw std::runtime_error("actual position over length of file");
+//     }
+//     if (debug_pos == -1){
+//         throw std::runtime_error("-1");
+//     }
+//     if (stream.fail()){
+//         throw std::runtime_error("stream has failed.");
+//     }
+
+// }
+
+// void debug_func(std::ifstream& stream, char*& buf, size_t& pos){
+//     char buffer[32];
+
+//     stream.read(buffer, 32);
+//     test_stream(stream, 488000, pos);
+// }
 
 /**
  * @brief Patcher object
@@ -45,14 +70,15 @@ class Patcher{
         void read_patch();
         void read_nd_slice(const unsigned int);
         void read_slice();
-        void close_file();
-        bool debug;
+        void sanity_check();
+        const bool debug = false;
 
     public:
         Patcher();
         std::vector<T> get_patch(
             std::string&, std::vector<size_t>&, std::vector<size_t>, std::vector<size_t>
         );
+        void debug_vars(std::string&, std::vector<size_t>&, std::vector<size_t>, std::vector<size_t>);
         size_t get_patch_size();
         size_t get_stream_start();
         std::vector<size_t> get_data_shape();
@@ -90,8 +116,11 @@ void Patcher<T>::set_init_vars(
     patch_num = pnum;
     std::reverse(patch_num.begin(), patch_num.end());
 
-    // Init patch object
+    // Init/reset patch object
     set_patch_size();
+    if (patch.size() > 0){
+        patch.clear();
+    }
     patch.resize(patch_size, 0);
 }
 
@@ -121,12 +150,13 @@ void Patcher<T>::open_file(){
  * @tparam T datatype of data found within filepath
  */
 template<typename T>
-void Patcher<T>::close_file(){
+void Patcher<T>::sanity_check(){
     if (!stream) {
-        stream.close();
         throw std::runtime_error("Failed to get patch within " + filepath);
     }
+    stream.close();
 }
+
 
 
 /**
@@ -297,7 +327,7 @@ void Patcher<T>::set_shift_lengths(){
         if (patch_num[i] == 0){
             shifts[i] -= data_strides[i] * padding[2*i];
         // If end of patch
-        } else if (patch_num[i] == num_patches[i] - 1){
+        } if (patch_num[i] == num_patches[i] - 1){
             shifts[i] -= data_strides[i] * padding[(2*i)+1];
         }
     }
@@ -383,7 +413,7 @@ void Patcher<T>::read_slice(){
             std::cout << ", moving data ptr forward " << shifts[0];
             std::cout << " bytes." << std::endl;
         }
-        buf += shifts[0];
+        buf += patch_strides[0] * padding[1];
     }
 }
 
@@ -463,14 +493,27 @@ std::vector<T> Patcher<T>::get_patch(
     std::vector<size_t> pshape,
     std::vector<size_t> pnum
 ){
-    debug = false;
     set_init_vars(fpath, qidx, pshape, pnum);
     open_file();
     set_runtime_vars();
     read_patch();
-    close_file();
+    sanity_check();
 
     return patch;
+}
+
+template<typename T>
+void Patcher<T>::debug_vars(
+    std::string& fpath,
+    std::vector<size_t>& qidx,
+    std::vector<size_t> pshape,
+    std::vector<size_t> pnum
+){
+    set_init_vars(fpath, qidx, pshape, pnum);
+    open_file();
+    set_runtime_vars();
+    move_stream_to_start();
+    sanity_check();
 }
 
 
