@@ -1,45 +1,16 @@
 #ifndef PATCHER_HPP_
 #define PATCHER_HPP_
 
-#include "npy.hpp"
+#include <string> // std::string
+#include <fstream> // std::ifstream
+#include <vector> // std::vector
+
+#include "npy_header.hpp"
 
 // TODO: Rewrite npy header reading code. Include check to make sure data dtypes
 // between the header and the used class match.
 // TODO: remove debug code
 
-template<typename T>
-void debug_vector(std::vector<T> &data, std::string name){
-    std::cout << name << std::endl << "[";
-    for (size_t i = 0; i < data.size() - 1; i++){
-        std::cout << data[i] << ", ";
-    }
-    std::cout << data.back() << "]" << std::endl;
-}
-
-
-// void test_stream(std::ifstream& stream, int max_size, size_t pos){
-//     if (pos >= max_size){
-//         throw std::runtime_error("assumed position over length of file");
-//     }
-//     int debug_pos = stream.tellg();
-//     if (debug_pos >= max_size){
-//         throw std::runtime_error("actual position over length of file");
-//     }
-//     if (debug_pos == -1){
-//         throw std::runtime_error("-1");
-//     }
-//     if (stream.fail()){
-//         throw std::runtime_error("stream has failed.");
-//     }
-
-// }
-
-// void debug_func(std::ifstream& stream, char*& buf, size_t& pos){
-//     char buffer[32];
-
-//     stream.read(buffer, 32);
-//     test_stream(stream, 488000, pos);
-// }
 
 /**
  * @brief Patcher object
@@ -133,13 +104,19 @@ void Patcher<T>::set_init_vars(
 template<typename T>
 void Patcher<T>::open_file(){
     stream.open(filepath, std::ifstream::binary);
-    std::string header_s = npy::read_header(stream);
+    std::string header_s = npy_header::read_header(stream);
     start = stream.tellg();
-    npy::header_t header = npy::parse_header(header_s);
+    npy_header::header_t header = npy_header::parse_header(header_s);
     data_shape = header.shape;
     std::reverse(data_shape.begin(), data_shape.end());
     if (!stream) {
         throw std::runtime_error("IO Error: failed to open " + filepath);
+    }
+
+    static_assert(npy_header::has_typestring<T>::value, "Unrecognised datatype in file.");
+
+    if (header.dtype.tie() != npy_header::has_typestring<T>::dtype.tie()) {
+        throw std::runtime_error("Type mismatch between class and file.");
     }
 }
 
@@ -297,9 +274,9 @@ void Patcher<T>::move_stream_to_start(){
         }
     }
     pos += (qspace_index[0] * data_strides[i]); // qdim
-    if (debug){
-        std::cout << "shifting stream to start of patch: forward " << pos << " bytes." << std::endl;
-    }
+    // if (debug){
+    //     std::cout << "shifting stream to start of patch: forward " << pos << " bytes." << std::endl;
+    // }
     pos += start;
     start = pos; // update to patch start position
     stream.seekg(pos, stream.beg);
@@ -331,7 +308,6 @@ void Patcher<T>::set_shift_lengths(){
             shifts[i] -= data_strides[i] * padding[(2*i)+1];
         }
     }
-    if (debug){debug_vector(shifts, "shifts");}
 }
 
 
@@ -373,12 +349,12 @@ void Patcher<T>::read_patch(){
         pos -= shifts[dim - 1];
         pos += ((qspace_index[i + 1] - qspace_index[i]) * data_strides.back());
         stream.seekg(pos, stream.beg);
-        if (debug){
-            std::cout << "we've just read dim " << dim;
-            std::cout << " index " << i << ", moving stream ptr ";
-            std::cout << ((qspace_index[i + 1] - qspace_index[i]) * data_strides.back()) - shifts[dim - 1];
-            std::cout << " bytes." << std::endl;
-        }
+        // if (debug){
+        //     std::cout << "we've just read dim " << dim;
+        //     std::cout << " index " << i << ", moving stream ptr ";
+        //     std::cout << ((qspace_index[i + 1] - qspace_index[i]) * data_strides.back()) - shifts[dim - 1];
+        //     std::cout << " bytes." << std::endl;
+        // }
     }
     read_nd_slice(dim - 1); // last slice
 }
@@ -388,11 +364,11 @@ template<typename T>
 void Patcher<T>::read_slice(){
     // If in first patch, and left padded region
     if ((patch_num[0] == 0) && (padding[0] > 0)){
-        if (debug){
-            std::cout << "we're at the left padded region in dim 0";
-            std::cout << ", shifting data ptr forward " << patch_strides[0] * padding[0];
-            std::cout << " bytes." << std::endl;
-        }
+        // if (debug){
+        //     std::cout << "we're at the left padded region in dim 0";
+        //     std::cout << ", shifting data ptr forward " << patch_strides[0] * padding[0];
+        //     std::cout << " bytes." << std::endl;
+        // }
         buf += patch_strides[0] * padding[0];
     }
     if (shifts[0] > 0){
@@ -401,18 +377,18 @@ void Patcher<T>::read_slice(){
         buf += shifts[0];
         pos += shifts[0];
     }
-    if (debug){
-        std::cout << "after reading " << shifts[0];
-        std::cout << " bytes, moving data ptr and (implicitly) stream forward ";
-        std::cout << shifts[0] << " bytes." << std::endl;
-    }
+    // if (debug){
+    //     std::cout << "after reading " << shifts[0];
+    //     std::cout << " bytes, moving data ptr and (implicitly) stream forward ";
+    //     std::cout << shifts[0] << " bytes." << std::endl;
+    // }
     // If in last patch, and right padded region
     if ((patch_num[0] + 1 == num_patches[0]) && (padding[(2 * 0) + 1] > 0)){
-        if (debug){
-            std::cout << "we're at the right padded region in dim 0";
-            std::cout << ", moving data ptr forward " << shifts[0];
-            std::cout << " bytes." << std::endl;
-        }
+        // if (debug){
+        //     std::cout << "we're at the right padded region in dim 0";
+        //     std::cout << ", moving data ptr forward " << shifts[0];
+        //     std::cout << " bytes." << std::endl;
+        // }
         buf += patch_strides[0] * padding[1];
     }
 }
@@ -433,29 +409,29 @@ void Patcher<T>::read_nd_slice(const unsigned int dim){
         for (size_t i = 0; i < (patch_shape[dim]); i++){
             // If at first patch, and within left padded region
             if ((patch_num[dim] == 0) && (i < padding[2 * dim])){
-                if (debug){
-                    std::cout << "we're at the left padded region in dim " << dim;
-                    std::cout << ", shifting data ptr forward " << patch_strides[dim];
-                    std::cout << " bytes." << std::endl;
-                }
+                // if (debug){
+                //     std::cout << "we're at the left padded region in dim " << dim;
+                //     std::cout << ", shifting data ptr forward " << patch_strides[dim];
+                //     std::cout << " bytes." << std::endl;
+                // }
                 buf += patch_strides[dim];
             // If at end patch, and within right padded region
             } else if ((patch_num[dim] + 1 == num_patches[dim]) && (i >= patch_shape[dim] - padding[(2 * dim) + 1])){
-                if (debug){
-                    std::cout << "we're at the right padded region in dim " << dim;
-                    std::cout << ", moving data ptr forward " << patch_strides[dim];
-                    std::cout << " bytes." << std::endl;
-                }
+                // if (debug){
+                //     std::cout << "we're at the right padded region in dim " << dim;
+                //     std::cout << ", moving data ptr forward " << patch_strides[dim];
+                //     std::cout << " bytes." << std::endl;
+                // }
                 buf += patch_strides[dim];
             } else {
                 read_nd_slice(dim - 1);
                 pos = pos - shifts[dim - 1] + data_strides[dim]; // Shift stream position.
                 stream.seekg(pos, stream.beg);
-                if (debug){
-                    std::cout << "we've just read dim " << dim;
-                    std::cout << " index " << i << ", moving stream ptr forward "; 
-                    std::cout << - shifts[dim - 1] + data_strides[dim] << " bytes." << std::endl;
-                }
+                // if (debug){
+                //     std::cout << "we've just read dim " << dim;
+                //     std::cout << " index " << i << ", moving stream ptr forward "; 
+                //     std::cout << - shifts[dim - 1] + data_strides[dim] << " bytes." << std::endl;
+                // }
             }
         }
     }

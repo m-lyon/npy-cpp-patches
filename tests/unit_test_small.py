@@ -3,7 +3,7 @@ import os
 import unittest
 import numpy as np
 
-from example import PatcherDouble, PatcherFloat, PatcherInt, PatcherLong
+from cpp_npy_patcher import PatcherDouble, PatcherFloat, PatcherInt, PatcherLong
 
 
 def get_test_data_one(filepath):

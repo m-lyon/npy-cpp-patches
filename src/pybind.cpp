@@ -3,7 +3,7 @@
 #include "patcher.hpp"
 
 
-PYBIND11_MODULE(example, m) {
+PYBIND11_MODULE(cpp_npy_patcher, m) {
     pybind11::class_<Patcher<double>>(m, "PatcherDouble")
         .def(pybind11::init<>())
         .def("get_data_shape", &Patcher<double>::get_data_shape, "get the data shape")
@@ -48,7 +48,3 @@ PYBIND11_MODULE(example, m) {
         .def("get_stream_start", &Patcher<long>::get_stream_start, "get the patch starting position in stream")
         .def("get_padding", &Patcher<long>::get_padding, "gets padding list");
 }
-
-/*
-c++ -O3 -Wall -shared -std=c++17 -fPIC $(python3 -m pybind11 --includes) example.cpp -o example$(python3-config --extension-suffix)
-*/
