@@ -1,9 +1,13 @@
+// Copyright (c) 2022 Matthew Lyon. All rights reserved.
+// Use of this source code is governed by an MIT-style license that can be
+// found in the LICENSE file.
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include "patcher.hpp"
+#include "src/patcher.hpp"
 
 
-PYBIND11_MODULE(cpp_npy_patcher, m) {
+PYBIND11_MODULE(npy_patcher, m) {
     pybind11::class_<Patcher<double>>(m, "PatcherDouble")
         .def(pybind11::init<>())
         .def("get_data_shape", &Patcher<double>::get_data_shape, "get the data shape")

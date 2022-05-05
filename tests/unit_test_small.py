@@ -3,7 +3,7 @@ import os
 import unittest
 import numpy as np
 
-from cpp_npy_patcher import PatcherDouble, PatcherFloat, PatcherInt, PatcherLong
+from npy_patcher import PatcherDouble, PatcherFloat, PatcherInt, PatcherLong
 
 
 def get_test_data_one(filepath):
@@ -98,61 +98,6 @@ def get_test_data_four(filepath):
     return data_dict
 
 
-def get_test_data_four_middle(filepath):
-    '''Testing: more complex (3D) shapes, differing qspace indexing
-
-    Datatype: long
-    Padding required: (0, 0, 4, 3, 2, 1)
-    '''
-    data_in = np.arange(12*33*22).reshape(1, 12, 33, 22).astype(np.int64)
-    rand = lambda x: np.random.randint(0, 300, (x, 12, 33, 22), dtype=np.int64)
-    data_in_final = np.concatenate([data_in, rand(1), data_in*2, rand(3), data_in*3], axis=0)
-    np.save(filepath, data_in_final, allow_pickle=False)
-    data_out = np.pad(data_in_final, ((0, 0), (0, 0), (4, 3), (2, 1)))
-    data_out_final = np.stack([data_out[6], data_out[0], data_out[2]])
-    data_out_final = data_out_final[:, 0:3, 10:20, 0:5]
-    data_dict = {
-        'qdx': np.array([6, 0, 2]),
-        'patch_shape': (3, 10, 5),
-        'patch_num': (0, 1, 0),
-        'data_out': data_out_final,
-        'padding': (0, 0, 4, 3, 2, 1),
-        'data_strides': (8*22*33*12, 8*22*33, 8*22, 8),
-        'patch_strides': (10*5*8, 5*8, 8),
-        'shift_lengths': (3*8*22*33, 10*8*22, 3*8),
-        'stream_start': (52404*8) + 128,
-    }
-
-    return data_dict
-
-
-def get_test_data_four_last_patch(filepath):
-    '''Testing: more complex (3D) shapes, differing qspace indexing
-
-    Datatype: long
-    Padding required: (0, 0, 4, 3, 2, 1)
-    '''
-    data_in = np.arange(12*33*22).reshape(1, 12, 33, 22).astype(np.int64)
-    rand = lambda x: np.random.randint(0, 300, (x, 12, 33, 22), dtype=np.int64)
-    data_in_final = np.concatenate([data_in, rand(1), data_in*2, rand(3), data_in*3], axis=0)
-    np.save(filepath, data_in_final, allow_pickle=False)
-    data_out = np.pad(data_in_final, ((0, 0), (0, 0), (4, 3), (2, 1)))[:, 9:12, 30:40, 20:25]
-    data_out_final = np.stack([data_out[2], data_out[0], data_out[6]])
-    data_dict = {
-        'qdx': np.array([2, 0, 6]),
-        'patch_shape': (3, 10, 5),
-        'patch_num': (3, 3, 4),
-        'data_out': data_out_final,
-        'padding': (0, 0, 4, 3, 2, 1),
-        'data_strides': (8*22*33*12, 8*22*33, 8*22, 8),
-        'patch_strides': (10*5*8, 5*8, 8),
-        'shift_lengths': (3*8*22*33, 7*8*22, 4*8),
-        'stream_start': (24548*8) + 128,
-    }
-
-    return data_dict
-
-
 def get_test_data_five(filepath):
     '''Testing: Patch shape larger than data shape
 
@@ -182,9 +127,11 @@ def get_test_data_five(filepath):
 
 
 class BaseTestCases:
-    
+    '''Base test case class with TestClass members'''
+
     class BaseTest(unittest.TestCase):
-        # pylint: disable=no-member,attribute-defined-outside-init
+        '''Actual Base test class'''
+        # pylint: disable=no-member
 
         def setUp(self) -> None:
             self.set_up_vars()
@@ -194,9 +141,11 @@ class BaseTestCases:
             os.remove(self.filepath)
 
         def set_up_vars(self):
+            '''Method to setup vars for testing'''
             raise NotImplementedError
 
         def run_get_patch(self):
+            '''Runs patcher get patch given runtime params'''
             return self.patcher.get_patch(
                 self.filepath,
                 self.data_dict['qdx'],
@@ -205,6 +154,7 @@ class BaseTestCases:
             )
 
         def debug_vars(self):
+            '''Runs debug subroutine'''
             self.patcher.debug_vars(
                 self.filepath,
                 self.data_dict['qdx'],
@@ -213,41 +163,49 @@ class BaseTestCases:
             )
 
         def test_equality(self):
+            '''Tests equality of array output'''
             data_out_test = self.run_get_patch()
             patch_shape = (len(self.data_dict['qdx']), ) + tuple(self.data_dict['patch_shape'])
             data_out_test = np.array(data_out_test).reshape(patch_shape)
             self.assertTrue(np.array_equal(data_out_test, self.data_dict['data_out']))
 
         def test_padding(self):
+            '''Tests padding value is correct'''
             self.debug_vars()
             padding = tuple(self.patcher.get_padding())
             self.assertEqual(padding, self.data_dict['padding'])
 
 
 class ExtraTestMixin:
+    '''Finegrained test mixin class, use with BaseTest'''
 
     def test_data_strides(self):
+        '''Tests strides vector output'''
         self.debug_vars()
         data_strides = tuple(self.patcher.get_data_strides())
         self.assertEqual(data_strides, self.data_dict['data_strides'])
 
     def test_patch_strides(self):
+        '''Tests patch strides vector output'''
         self.debug_vars()
         patch_strides = tuple(self.patcher.get_patch_strides())
         self.assertEqual(patch_strides, self.data_dict['patch_strides'])
 
     def test_shifts(self):
+        '''Tests shifts vector output'''
         self.debug_vars()
         shifts = tuple(self.patcher.get_shift_lengths())
         self.assertEqual(shifts, self.data_dict['shift_lengths'])
 
     def test_stream_start(self):
+        '''Tests stream start location'''
         self.debug_vars()
         start = self.patcher.get_stream_start()
         self.assertEqual(start, self.data_dict['stream_start'])
 
 
 class TestPatcherOne(BaseTestCases.BaseTest):
+    '''Simplest test case'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_one.npy'
@@ -256,6 +214,7 @@ class TestPatcherOne(BaseTestCases.BaseTest):
 
 
 class TestPatcherTwo(BaseTestCases.BaseTest):
+    '''Test case requiring padding'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_two.npy'
@@ -264,6 +223,7 @@ class TestPatcherTwo(BaseTestCases.BaseTest):
 
 
 class TestPatcherThree(BaseTestCases.BaseTest):
+    '''Non-contiguous q-space indexing'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_three.npy'
@@ -272,6 +232,7 @@ class TestPatcherThree(BaseTestCases.BaseTest):
 
 
 class TestPatcherFour(BaseTestCases.BaseTest, ExtraTestMixin):
+    '''Robust shape & padding requirements test'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_four.npy'
@@ -279,23 +240,8 @@ class TestPatcherFour(BaseTestCases.BaseTest, ExtraTestMixin):
         self.patcher = PatcherLong()
 
 
-class TestPatcherFourMiddle(BaseTestCases.BaseTest):
-
-    def set_up_vars(self):
-        self.filepath = 'test_data_four_middle.npy'
-        self.setup_func = get_test_data_four_middle
-        self.patcher = PatcherLong()
-
-
-class TestPatcherFourLast(BaseTestCases.BaseTest, ExtraTestMixin):
-
-    def set_up_vars(self):
-        self.filepath = 'test_data_four_last.npy'
-        self.setup_func = get_test_data_four_last_patch
-        self.patcher = PatcherLong()
-
-
 class TestPatcherFive(BaseTestCases.BaseTest, ExtraTestMixin):
+    '''Patch shape larger than data shape'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_five.npy'

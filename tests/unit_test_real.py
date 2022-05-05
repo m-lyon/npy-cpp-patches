@@ -1,10 +1,9 @@
+'''Tests real data'''
 
-
-import os
 import unittest
 import numpy as np
 
-from example import PatcherDouble, PatcherFloat, PatcherInt, PatcherLong
+from npy_patcher import PatcherFloat
 
 
 def get_test_data(filepath):
@@ -16,7 +15,8 @@ def get_test_data(filepath):
     data_out = np.load(filepath)
     data_out = np.pad(data_out, ((0, 0), (3, 2), (3, 3), (3, 2)))
     data_out = np.stack(
-        [data_out[50], data_out[4], data_out[8], data_out[200], data_out[103], data_out[30], data_out[230], data_out[1]]
+        [data_out[50], data_out[4], data_out[8], data_out[200], data_out[103],
+        data_out[30], data_out[230], data_out[1]]
     )
     data_dict = {
         'qdx': np.array([50, 4, 8, 200, 103, 30, 230, 1]),
@@ -29,18 +29,20 @@ def get_test_data(filepath):
     return data_dict
 
 
-class BaseTest(unittest.TestCase):
-    # pylint: disable=no-member,attribute-defined-outside-init
+class RealDataTest(unittest.TestCase):
+    '''Real data test class'''
 
     def setUp(self) -> None:
         self.set_up_vars()
         self.data_dict = get_test_data(self.filepath)
 
     def set_up_vars(self):
+        '''Sets up variables for testing'''
         self.filepath = '/mnt/Data/Work/HCP/100206/Diffusion/data.npy'
         self.patcher = PatcherFloat()
 
     def run_get_patch(self, pnum):
+        '''Runs patcher call given patch number'''
         return self.patcher.get_patch(
             self.filepath,
             self.data_dict['qdx'],
@@ -49,6 +51,7 @@ class BaseTest(unittest.TestCase):
         )
 
     def test_equality_loop(self):
+        '''Tests whether arrays are equal'''
         max_patch_num = self.data_dict['max_patch_num']
         patch_shape = self.data_dict['patch_shape']
         pshape = (len(self.data_dict['qdx']), ) + tuple(patch_shape)
@@ -63,7 +66,8 @@ class BaseTest(unittest.TestCase):
                         k*patch_shape[2],
                         (k+1)*patch_shape[2],
                     )
-                    with self.subTest(f"Patch: ({i},{j},{k}) data{slice_str}"):
+                    with self.subTest(f'Patch: ({i},{j},{k}) data{slice_str}'):
+                        print(f'Patch: ({i},{j},{k}) data{slice_str}')
                         data_out_test = self.run_get_patch(pnum=(i, j, k))
                         data_out_test = np.array(data_out_test).reshape(pshape)
                         data_out_true = self.data_dict['data_out'][
@@ -74,7 +78,6 @@ class BaseTest(unittest.TestCase):
                         ]
                         self.assertTrue(
                             np.array_equal(data_out_test, data_out_true),
-                            # f'\n\n{data_out_true[0]}\n-----------------\n{data_out_test[0]}'
                         )
 
 

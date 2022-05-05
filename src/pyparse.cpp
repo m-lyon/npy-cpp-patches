@@ -1,4 +1,9 @@
-#include "pyparse.hpp"
+// Copyright (c) 2022 Matthew Lyon. All rights reserved.
+// Use of this source code is governed by an MIT-style license that can be
+// found in the LICENSE file.
+
+#include "src/pyparse.hpp"
+#include <utility>  // std::pair
 
 
 namespace pyparse {
@@ -36,7 +41,7 @@ namespace pyparse {
     */
     std::unordered_map<std::string, std::string> parse_dict(
         std::string in, const std::vector<std::string>& keys
-    ){
+    ) {
         std::unordered_map <std::string, std::string> map;
 
         if (keys.size() == 0)
@@ -93,10 +98,10 @@ namespace pyparse {
         Parses the string representation of a Python boolean
     */
     bool parse_bool(const std::string& in) {
-        if (in == "True"){
+        if (in == "True") {
             return true;
         }
-        if (in == "False"){
+        if (in == "False") {
             return false;
         }
         throw std::runtime_error("Invalid python boolan.");
@@ -136,4 +141,4 @@ namespace pyparse {
         return v;
     }
 
-}
+}  // namespace pyparse

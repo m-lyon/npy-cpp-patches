@@ -4,11 +4,11 @@ import os
 import unittest
 import numpy as np
 
-from example import PatcherDouble, PatcherFloat, PatcherInt, PatcherLong
+from npy_patcher import PatcherFloat, PatcherInt, PatcherLong
 
 
-def get_test_data_2D(filepath):
-    '''Testing: more complex qspace indexing
+def get_test_data_2d(filepath):
+    '''Testing: 2D shape with non-contiguous qspace indexing
 
     Datatype: int
     Padding required: (1, 0, 1, 0)
@@ -31,7 +31,7 @@ def get_test_data_2D(filepath):
     return data_dict
 
 
-def get_test_data_3D(filepath):
+def get_test_data_3d(filepath):
     '''Testing: more complex (3D) shapes, differing qspace indexing
 
     Datatype: long
@@ -54,7 +54,7 @@ def get_test_data_3D(filepath):
     return data_dict
 
 
-def get_test_data_4D(filepath):
+def get_test_data_4d(filepath):
     '''Testing: Patch shape larger than data shape
 
     Datatype: float
@@ -78,9 +78,11 @@ def get_test_data_4D(filepath):
 
 
 class BaseTestCases:
-    
+    '''Base test case class with TestClass members'''
+
     class BaseTest(unittest.TestCase):
-        # pylint: disable=no-member,attribute-defined-outside-init
+        '''Actual Base test class'''
+        # pylint: disable=no-member
 
         def setUp(self) -> None:
             self.set_up_vars()
@@ -90,9 +92,11 @@ class BaseTestCases:
             os.remove(self.filepath)
 
         def set_up_vars(self):
+            '''Method to setup vars for testing'''
             raise NotImplementedError
 
         def run_get_patch(self, pnum):
+            '''Runs patcher get patch given runtime params'''
             return self.patcher.get_patch(
                 self.filepath,
                 self.data_dict['qdx'],
@@ -102,14 +106,15 @@ class BaseTestCases:
 
 
 class TestPatcherLoop2D(BaseTestCases.BaseTest):
+    '''2D test case testing each patch'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_loop_2D.npy'
-        self.setup_func = get_test_data_2D
+        self.setup_func = get_test_data_2d
         self.patcher = PatcherInt()
 
     def test_equality_loop(self):
-       
+        '''Tests equality of array output for each patch'''
         max_patch_num = self.data_dict['max_patch_num']
         patch_shape = self.data_dict['patch_shape']
         pshape = (len(self.data_dict['qdx']), ) + tuple(patch_shape)
@@ -131,19 +136,19 @@ class TestPatcherLoop2D(BaseTestCases.BaseTest):
                     ]
                     self.assertTrue(
                         np.array_equal(data_out_test, data_out_true),
-                        f'\n\n{data_out_true[0]}\n-----------------\n{data_out_test[0]}'
                     )
 
 
 class TestPatcherLoop3D(BaseTestCases.BaseTest):
+    '''3D test case testing each patch'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_loop.npy'
-        self.setup_func = get_test_data_3D
+        self.setup_func = get_test_data_3d
         self.patcher = PatcherLong()
 
     def test_equality_loop(self):
-       
+        '''Tests equality of array output for each patch'''
         max_patch_num = self.data_dict['max_patch_num']
         patch_shape = self.data_dict['patch_shape']
         pshape = (len(self.data_dict['qdx']), ) + tuple(patch_shape)
@@ -169,26 +174,26 @@ class TestPatcherLoop3D(BaseTestCases.BaseTest):
                         ]
                         self.assertTrue(
                             np.array_equal(data_out_test, data_out_true),
-                            f'\n\n{data_out_true[0]}\n-----------------\n{data_out_test[0]}'
                         )
 
 
 class TestPatcherLoop4D(BaseTestCases.BaseTest):
+    '''4D test case testing each patch'''
 
     def set_up_vars(self):
         self.filepath = 'test_data_loop_4D.npy'
-        self.setup_func = get_test_data_4D
+        self.setup_func = get_test_data_4d
         self.patcher = PatcherFloat()
 
     def test_equality_loop(self):
-
+        '''Tests equality of array output for each patch'''
         max_patch_num = self.data_dict['max_patch_num']
         patch_shape = self.data_dict['patch_shape']
         pshape = (len(self.data_dict['qdx']), ) + tuple(patch_shape)
         for i in range(0, max_patch_num[0]+ 1):
             for j in range(0, max_patch_num[1] + 1):
                 for k in range(0, max_patch_num[2] + 1):
-                    for l in range(0, max_patch_num[3]+ 1):
+                    for p in range(0, max_patch_num[3]+ 1):
                         slice_str = '[:, {}:{}, {}:{}, {}:{}, {}:{}]'.format(
                             i*patch_shape[0],
                             (i+1)*patch_shape[0],
@@ -196,22 +201,21 @@ class TestPatcherLoop4D(BaseTestCases.BaseTest):
                             (j+1)*patch_shape[1],
                             k*patch_shape[2],
                             (k+1)*patch_shape[2],
-                            l*patch_shape[3],
-                            (l+1)*patch_shape[3],
+                            p*patch_shape[3],
+                            (p+1)*patch_shape[3],
                         )
-                        with self.subTest(f"Patch: ({i},{j},{k},{l}) data{slice_str}"):
-                            data_out_test = self.run_get_patch(pnum=(i, j, k, l))
+                        with self.subTest(f"Patch: ({i},{j},{k},{p}) data{slice_str}"):
+                            data_out_test = self.run_get_patch(pnum=(i, j, k, p))
                             data_out_test = np.array(data_out_test).reshape(pshape)
                             data_out_true = self.data_dict['data_out'][
                                 :,
                                 i*patch_shape[0]:(i+1)*patch_shape[0],
                                 j*patch_shape[1]:(j+1)*patch_shape[1],
                                 k*patch_shape[2]:(k+1)*patch_shape[2],
-                                l*patch_shape[3]:(l+1)*patch_shape[3],
+                                p*patch_shape[3]:(p+1)*patch_shape[3],
                             ]
                             self.assertTrue(
                                 np.array_equal(data_out_test, data_out_true),
-                                f'\n\n{data_out_true[0]}\n-----------------\n{data_out_test[0]}'
                             )
 
 

@@ -7,7 +7,7 @@ from pybind11.setup_helpers import Pybind11Extension
 
 ext_modules = [
     Pybind11Extension(
-        "cpp_npy_patcher",
+        "npy_patcher",
         sorted(glob("src/*.cpp")),
     ),
 ]
