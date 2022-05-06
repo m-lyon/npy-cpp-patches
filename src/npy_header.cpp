@@ -2,12 +2,21 @@
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 
+#include <unordered_map>  // std::unordered_map
 #include "src/npy_header.hpp"
 #include "src/pyparse.hpp"
 
 
 namespace npy_header {
 
+
+/**
+ * @brief Reads magic string present at top of npy header, then determines file
+ *      version from next 2 bytes.
+ * 
+ * @param stream File stream object
+ * @return version_t File version
+ */
 version_t read_magic(std::istream& stream) {
     char buf[magic_string_length + 2];
     stream.read(buf, magic_string_length + 2);
@@ -30,6 +39,12 @@ version_t read_magic(std::istream& stream) {
 }
 
 
+/**
+ * @brief Reads header from stream object into header string
+ * 
+ * @param stream File stream
+ * @return std::string Output header string
+ */
 std::string read_header(std::istream& stream) {
     // check magic bytes and version number
     version_t version = read_magic(stream);
@@ -70,50 +85,65 @@ std::string read_header(std::istream& stream) {
     return header;
 }
 
+/**
+ * @brief Parses npy header metadata
+ * 
+ * @details The header consists of the following:
+        - First 6 bytes are a magic string: exactly "x93NUMPY".
+        - Next 1 byte is an unsigned byte: the major version number of the file format, e.g. x01.
+        - Next 1 byte is an unsigned byte: the minor version number of the file format, e.g. x00.
+        - Next 2 bytes form a little-endian unsigned short int: the length of the
+            header data HEADER_LEN.
+        - Next HEADER_LEN bytes form the header data describing the array's format.
+            It is an ASCII string which contains a Python literal expression of a dictionary.
+            It is terminated by a newline ('n') and padded with spaces ('x20') to make the total
+            length of the magic string + 4 + HEADER_LEN be evenly divisible by 64 for
+            alignment purposes.
+    
+            The dictionary contains three keys:
 
+            "descr" : dtype.descr
+                An object that can be passed as an argument to the numpy.dtype()
+                constructor to create the array's dtype.
+            "fortran_order" : bool
+                Whether the array data is Fortran-contiguous or not. Since Fortran-contiguous
+                arrays are a common form of non-C-contiguity, we allow them to be written
+                directly to disk for efficiency.
+            "shape" : tuple of int
+                The shape of the array.
+
+            For repeatability and readability, the dictionary keys are sorted in alphabetic order.
+
+ * @param header header string extracted from npy file.
+ * @return header_t Header metadata object.
+ */
 header_t parse_header(std::string header) {
-    /*
-        The first 6 bytes are a magic string: exactly "x93NUMPY".
-        The next 1 byte is an unsigned byte: the major version number of the file format, e.g. x01.
-        The next 1 byte is an unsigned byte: the minor version number of the file format, e.g. x00. Note: the version of the file format is not tied to the version of the numpy package.
-        The next 2 bytes form a little-endian unsigned short int: the length of the header data HEADER_LEN.
-        The next HEADER_LEN bytes form the header data describing the array's format. It is an ASCII string which contains a Python literal expression of a dictionary. It is terminated by a newline ('n') and padded with spaces ('x20') to make the total length of the magic string + 4 + HEADER_LEN be evenly divisible by 16 for alignment purposes.
-        The dictionary contains three keys:
-
-        "descr" : dtype.descr
-        An object that can be passed as an argument to the numpy.dtype() constructor to create the array's dtype.
-        "fortran_order" : bool
-        Whether the array data is Fortran-contiguous or not. Since Fortran-contiguous arrays are a common form of non-C-contiguity, we allow them to be written directly to disk for efficiency.
-        "shape" : tuple of int
-        The shape of the array.
-        For repeatability and readability, this dictionary is formatted using pprint.pformat() so the keys are in alphabetic order.
-    */
-
-    // remove trailing newline
+    // Remove trailing newline
     if (header.back() != '\n')
-        throw std::runtime_error("invalid header");
+        throw std::runtime_error("Invalid header");
     header.pop_back();
 
-    // parse the dictionary
-    std::vector <std::string> keys{"descr", "fortran_order", "shape"};
-    auto dict_map = pyparse::parse_dict(header, keys);
+    // Parse the dictionary string
+    std::vector<std::string> keys {"descr", "fortran_order", "shape"};
+    std::unordered_map<std::string, std::string> dict = pyparse::parse_dict(header, keys);
 
-    if (dict_map.size() == 0)
-        throw std::runtime_error("invalid dictionary in header");
+    if (dict.size() == 0)
+        throw std::runtime_error("Invalid dictionary in header");
 
-    std::string descr_s = dict_map["descr"];
-    std::string fortran_s = dict_map["fortran_order"];
-    std::string shape_s = dict_map["shape"];
+    std::string descr_s = dict["descr"];
+    std::string fortran_s = dict["fortran_order"];
+    std::string shape_s = dict["shape"];
 
     std::string descr = pyparse::parse_str(descr_s);
     dtype_t dtype = parse_descr(descr);
 
-    // convert literal Python bool to C++ bool
+    // Convert literal Python bool to C++ bool
     bool fortran_order = pyparse::parse_bool(fortran_s);
 
-    // parse the shape tuple
-    auto shape_v = pyparse::parse_tuple(shape_s);
+    // Parse the shape tuple
+    std::vector<std::string> shape_v = pyparse::parse_tuple(shape_s);
 
+    // Convert string integers in tuple to C integers
     std::vector <size_t> shape;
     for (auto item : shape_v) {
         size_t dim = static_cast<size_t>(std::stoul(item));
@@ -124,9 +154,15 @@ header_t parse_header(std::string header) {
 }
 
 
+/**
+ * @brief Parses dtype description string into dtype struct
+ * 
+ * @param typestring dtype description
+ * @return dtype_t dtype struct
+ */
 dtype_t parse_descr(std::string typestring) {
     if (typestring.length() < 3) {
-        throw std::runtime_error("Invalid typestring (length)");
+        throw std::runtime_error("Invalid typestring (length).");
     }
 
     char byteorder_c = typestring.at(0);
@@ -134,7 +170,7 @@ dtype_t parse_descr(std::string typestring) {
     std::string itemsize_s = typestring.substr(2);
 
     if (!in_array(byteorder_c, endian_chars)) {
-        throw std::runtime_error("Invalid typestring (byteorder)");
+        throw std::runtime_error("Invalid typestring (byteorder).");
     }
 
     if (!in_array(kind_c, numtype_chars)) {

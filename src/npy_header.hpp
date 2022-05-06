@@ -177,18 +177,18 @@ struct has_typestring<std::complex<long double>>{
 // --- End typestring templates ---
 
 std::string read_header(std::istream&);
-// TODO(m-lyon): upto here
 header_t parse_header(std::string);
 dtype_t parse_descr(std::string);
 
 
 inline bool is_digits(const std::string &str) {
+    // ::isdigit exists in root namespace, explicitly referenced by "::"
     return std::all_of(str.begin(), str.end(), ::isdigit);
 }
 
 
 template<typename T, size_t N>
-inline bool in_array(T val, const std::array <T, N> &arr) {
+inline bool in_array(T val, const std::array<T, N>& arr) {
     return std::find(std::begin(arr), std::end(arr), val) != std::end(arr);
 }
 

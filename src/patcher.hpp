@@ -11,10 +11,6 @@
 
 #include "src/npy_header.hpp"
 
-// TODO(m-lyon): Rewrite npy header reading code. Include check to make sure data dtypes
-//      between the header and the used class match.
-// TODO(m-lyon): remove debug code
-
 
 /**
  * @brief Patcher object
@@ -29,11 +25,10 @@ class Patcher{
     std::vector<T> patch;
     std::vector<size_t> data_shape, qspace_index, patch_shape, patch_num;
     std::vector<size_t> num_patches, padding, data_strides, patch_strides, shifts;
-    unsigned int rem, total_pad;
     size_t patch_size, start, pos;
     char* buf;
-    void set_init_vars(std::string&, std::vector<size_t>&, std::vector<size_t>&,
-                        std::vector<size_t>&);
+    void set_init_vars(const std::string&, const std::vector<size_t>&, const std::vector<size_t>&,
+                       const std::vector<size_t>&);
     void set_runtime_vars();
     void set_patch_size();
     void open_file();
@@ -50,9 +45,9 @@ class Patcher{
 
   public:
     Patcher();
-    std::vector<T> get_patch(std::string&, std::vector<size_t>&, std::vector<size_t>,
-                                std::vector<size_t>);
-    void debug_vars(std::string&, std::vector<size_t>&, std::vector<size_t>,
+    std::vector<T> get_patch(const std::string&, const std::vector<size_t>&, std::vector<size_t>,
+                             std::vector<size_t>);
+    void debug_vars(const std::string&, const std::vector<size_t>&, std::vector<size_t>,
                     std::vector<size_t>);
     size_t get_patch_size();
     size_t get_stream_start();
@@ -79,10 +74,10 @@ Patcher<T>::Patcher() {}
  */
 template<typename T>
 void Patcher<T>::set_init_vars(
-    std::string& fpath,
-    std::vector<size_t>& qidx,
-    std::vector<size_t>& pshape,
-    std::vector<size_t>& pnum
+    const std::string& fpath,
+    const std::vector<size_t>& qidx,
+    const std::vector<size_t>& pshape,
+    const std::vector<size_t>& pnum
 ) {
     filepath = fpath;
     qspace_index = qidx;
@@ -107,20 +102,28 @@ void Patcher<T>::set_init_vars(
  */
 template<typename T>
 void Patcher<T>::open_file() {
+    // Open file
     stream.open(filepath, std::ifstream::binary);
+
+    // Read and parse header
     std::string header_s = npy_header::read_header(stream);
     start = stream.tellg();
     npy_header::header_t header = npy_header::parse_header(header_s);
     data_shape = header.shape;
     std::reverse(data_shape.begin(), data_shape.end());
+
+    // Data validation
     if (!stream) {
         throw std::runtime_error("IO Error: failed to open " + filepath);
     }
 
     static_assert(npy_header::has_typestring<T>::value, "Unrecognised datatype in file.");
-
     if (header.dtype.tie() != npy_header::has_typestring<T>::dtype.tie()) {
         throw std::runtime_error("Type mismatch between class and file.");
+    }
+
+    if (header.fortran_order) {
+        throw std::runtime_error("Fortran data order extraction not currently implemented.");
     }
 }
 
@@ -139,7 +142,6 @@ void Patcher<T>::sanity_check() {
 }
 
 
-
 /**
  * @brief Calculates padding needed to split data into patches given by
  *      patch_shape
@@ -152,9 +154,9 @@ void Patcher<T>::set_padding() {
 
     // Iterate over dimensions
     for (size_t i = 0; i < patch_shape.size(); i++) {
-        rem = data_shape[i] % patch_shape[i];
+        unsigned int rem = data_shape[i] % patch_shape[i];
         if (rem != 0) {
-            total_pad = patch_shape[i] - rem;
+            unsigned int total_pad = patch_shape[i] - rem;
             if (total_pad % 2 == 0) {
                 padding[i*2] = total_pad / 2;
             } else {
@@ -273,13 +275,11 @@ void Patcher<T>::move_stream_to_start() {
     for (; i < patch_shape.size(); i++) {
         if (patch_num[i] != 0) {
             // shift minus the padding
-            pos += (data_strides[i] * patch_num[i] * patch_shape[i]) - (data_strides[i] * padding[2*i]); 
+            pos += (data_strides[i] * patch_num[i] * patch_shape[i])
+                    - (data_strides[i] * padding[2*i]);
         }
     }
     pos += (qspace_index[0] * data_strides[i]);  // qdim
-    // if (debug){
-    //     std::cout << "shifting stream to start of patch: forward " << pos << " bytes." << std::endl;
-    // }
     pos += start;
     start = pos;  // update to patch start position
     stream.seekg(pos, stream.beg);
@@ -353,12 +353,6 @@ void Patcher<T>::read_patch() {
         pos -= shifts[dim - 1];
         pos += ((qspace_index[i + 1] - qspace_index[i]) * data_strides.back());
         stream.seekg(pos, stream.beg);
-        // if (debug){
-        //     std::cout << "we've just read dim " << dim;
-        //     std::cout << " index " << i << ", moving stream ptr ";
-        //     std::cout << ((qspace_index[i + 1] - qspace_index[i]) * data_strides.back()) - shifts[dim - 1];
-        //     std::cout << " bytes." << std::endl;
-        // }
     }
     read_nd_slice(dim - 1);  // last slice
 }
@@ -368,11 +362,6 @@ template<typename T>
 void Patcher<T>::read_slice() {
     // If in first patch, and left padded region
     if ((patch_num[0] == 0) && (padding[0] > 0)) {
-        // if (debug){
-        //     std::cout << "we're at the left padded region in dim 0";
-        //     std::cout << ", shifting data ptr forward " << patch_strides[0] * padding[0];
-        //     std::cout << " bytes." << std::endl;
-        // }
         buf += patch_strides[0] * padding[0];
     }
     if (shifts[0] > 0) {
@@ -381,18 +370,8 @@ void Patcher<T>::read_slice() {
         buf += shifts[0];
         pos += shifts[0];
     }
-    // if (debug){
-    //     std::cout << "after reading " << shifts[0];
-    //     std::cout << " bytes, moving data ptr and (implicitly) stream forward ";
-    //     std::cout << shifts[0] << " bytes." << std::endl;
-    // }
     // If in last patch, and right padded region
     if ((patch_num[0] + 1 == num_patches[0]) && (padding[(2 * 0) + 1] > 0)) {
-        // if (debug){
-        //     std::cout << "we're at the right padded region in dim 0";
-        //     std::cout << ", moving data ptr forward " << shifts[0];
-        //     std::cout << " bytes." << std::endl;
-        // }
         buf += patch_strides[0] * padding[1];
     }
 }
@@ -413,29 +392,15 @@ void Patcher<T>::read_nd_slice(const unsigned int dim) {
         for (size_t i = 0; i < (patch_shape[dim]); i++) {
             // If at first patch, and within left padded region
             if ((patch_num[dim] == 0) && (i < padding[2 * dim])) {
-                // if (debug){
-                //     std::cout << "we're at the left padded region in dim " << dim;
-                //     std::cout << ", shifting data ptr forward " << patch_strides[dim];
-                //     std::cout << " bytes." << std::endl;
-                // }
                 buf += patch_strides[dim];
             // If at end patch, and within right padded region
-            } else if ((patch_num[dim] + 1 == num_patches[dim]) && (i >= patch_shape[dim] - padding[(2 * dim) + 1])) {
-                // if (debug){
-                //     std::cout << "we're at the right padded region in dim " << dim;
-                //     std::cout << ", moving data ptr forward " << patch_strides[dim];
-                //     std::cout << " bytes." << std::endl;
-                // }
+            } else if ((patch_num[dim] + 1 == num_patches[dim])
+                        && (i >= patch_shape[dim] - padding[(2 * dim) + 1])) {
                 buf += patch_strides[dim];
             } else {
                 read_nd_slice(dim - 1);
                 pos = pos - shifts[dim - 1] + data_strides[dim];  // Shift stream position.
                 stream.seekg(pos, stream.beg);
-                // if (debug){
-                //     std::cout << "we've just read dim " << dim;
-                //     std::cout << " index " << i << ", moving stream ptr forward ";
-                //     std::cout << - shifts[dim - 1] + data_strides[dim] << " bytes." << std::endl;
-                // }
             }
         }
     }
@@ -468,8 +433,8 @@ std::vector<size_t> Patcher<T>::get_data_shape() {
  */
 template<typename T>
 std::vector<T> Patcher<T>::get_patch(
-    std::string& fpath,
-    std::vector<size_t>& qidx,
+    const std::string& fpath,
+    const std::vector<size_t>& qidx,
     std::vector<size_t> pshape,
     std::vector<size_t> pnum
 ) {
@@ -484,8 +449,8 @@ std::vector<T> Patcher<T>::get_patch(
 
 template<typename T>
 void Patcher<T>::debug_vars(
-    std::string& fpath,
-    std::vector<size_t>& qidx,
+    const std::string& fpath,
+    const std::vector<size_t>& qidx,
     std::vector<size_t> pshape,
     std::vector<size_t> pnum
 ) {
