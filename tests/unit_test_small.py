@@ -18,7 +18,7 @@ def get_test_data_one(filepath):
     data_dict = {
         'patch_shape': (3, 3),
         'qdx': (0,),
-        'patch_num': (0, 0),
+        'patch_num': 0,
         'padding': (0, 0, 0, 0),
         'data_out': data_out,
     }
@@ -39,7 +39,7 @@ def get_test_data_two(filepath):
     data_dict = {
         'patch_shape': (3, 3),
         'qdx': [0],
-        'patch_num': (0, 1),
+        'patch_num': 1,
         'padding': (1, 0, 1, 0),
         'data_out': data_out,
     }
@@ -63,7 +63,7 @@ def get_test_data_three(filepath):
     data_dict = {
         'patch_shape': [3, 3],
         'qdx': np.array([0, 5, 6]),
-        'patch_num': (1, 0),
+        'patch_num': 2,
         'padding': (1, 0, 1, 0),
         'data_out': data_out,
     }
@@ -86,7 +86,7 @@ def get_test_data_four(filepath):
     data_dict = {
         'qdx': np.array([6, 0, 2]),
         'patch_shape': (3, 10, 5),
-        'patch_num': (2, 3, 0),
+        'patch_num': 55,
         'data_out': data_out_final,
         'padding': (0, 0, 4, 3, 2, 1),
         'data_strides': (8*22*33*12, 8*22*33, 8*22, 8),
@@ -114,7 +114,7 @@ def get_test_data_five(filepath):
     data_dict = {
         'patch_shape': (6, 10, 5, 3),
         'qdx': np.array([5, 0]),
-        'patch_num': (0, 0, 2, 0),
+        'patch_num': 4,
         'data_out': data_out_final,
         'padding': (1, 1, 2, 1, 0, 0, 1, 0),
         'data_strides': (4*5*20*7*4, 4*5*20*7, 4*5*20, 4*5, 4),

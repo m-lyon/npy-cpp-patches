@@ -118,6 +118,7 @@ class TestPatcherLoop2D(BaseTestCases.BaseTest):
         max_patch_num = self.data_dict['max_patch_num']
         patch_shape = self.data_dict['patch_shape']
         pshape = (len(self.data_dict['qdx']), ) + tuple(patch_shape)
+        pnum = 0
         for i in range(0, max_patch_num[0]+ 1):
             for j in range(0, max_patch_num[1] + 1):
                 slice_str = '[:, {}:{}, {}:{}]'.format(
@@ -126,8 +127,10 @@ class TestPatcherLoop2D(BaseTestCases.BaseTest):
                     j*patch_shape[1],
                     (j+1)*patch_shape[1],
                 )
-                with self.subTest(f"Patch: ({i},{j}) data{slice_str}"):
-                    data_out_test = self.run_get_patch(pnum=(i, j))
+                with self.subTest(f"Patch: {pnum} data{slice_str}"):
+                    data_out_test = self.run_get_patch(pnum)
+                    pnums = self.patcher.get_patch_numbers()
+                    self.assertEqual([i, j], pnums)
                     data_out_test = np.array(data_out_test).reshape(pshape)
                     data_out_true = self.data_dict['data_out'][
                         :,
@@ -136,7 +139,9 @@ class TestPatcherLoop2D(BaseTestCases.BaseTest):
                     ]
                     self.assertTrue(
                         np.array_equal(data_out_test, data_out_true),
+                        f'\n{data_out_test}\n\n-------\n{data_out_true}'
                     )
+                pnum += 1
 
 
 class TestPatcherLoop3D(BaseTestCases.BaseTest):
@@ -152,6 +157,7 @@ class TestPatcherLoop3D(BaseTestCases.BaseTest):
         max_patch_num = self.data_dict['max_patch_num']
         patch_shape = self.data_dict['patch_shape']
         pshape = (len(self.data_dict['qdx']), ) + tuple(patch_shape)
+        pnum = 0
         for i in range(0, max_patch_num[0]+ 1):
             for j in range(0, max_patch_num[1] + 1):
                 for k in range(0, max_patch_num[2] + 1):
@@ -164,7 +170,7 @@ class TestPatcherLoop3D(BaseTestCases.BaseTest):
                         (k+1)*patch_shape[2],
                     )
                     with self.subTest(f"Patch: ({i},{j},{k}) data{slice_str}"):
-                        data_out_test = self.run_get_patch(pnum=(i, j, k))
+                        data_out_test = self.run_get_patch(pnum)
                         data_out_test = np.array(data_out_test).reshape(pshape)
                         data_out_true = self.data_dict['data_out'][
                             :,
@@ -175,6 +181,7 @@ class TestPatcherLoop3D(BaseTestCases.BaseTest):
                         self.assertTrue(
                             np.array_equal(data_out_test, data_out_true),
                         )
+                    pnum += 1
 
 
 class TestPatcherLoop4D(BaseTestCases.BaseTest):
@@ -190,6 +197,7 @@ class TestPatcherLoop4D(BaseTestCases.BaseTest):
         max_patch_num = self.data_dict['max_patch_num']
         patch_shape = self.data_dict['patch_shape']
         pshape = (len(self.data_dict['qdx']), ) + tuple(patch_shape)
+        pnum = 0
         for i in range(0, max_patch_num[0]+ 1):
             for j in range(0, max_patch_num[1] + 1):
                 for k in range(0, max_patch_num[2] + 1):
@@ -205,7 +213,7 @@ class TestPatcherLoop4D(BaseTestCases.BaseTest):
                             (p+1)*patch_shape[3],
                         )
                         with self.subTest(f"Patch: ({i},{j},{k},{p}) data{slice_str}"):
-                            data_out_test = self.run_get_patch(pnum=(i, j, k, p))
+                            data_out_test = self.run_get_patch(pnum)
                             data_out_test = np.array(data_out_test).reshape(pshape)
                             data_out_true = self.data_dict['data_out'][
                                 :,
@@ -217,6 +225,7 @@ class TestPatcherLoop4D(BaseTestCases.BaseTest):
                             self.assertTrue(
                                 np.array_equal(data_out_test, data_out_true),
                             )
+                        pnum += 1
 
 
 if __name__ == '__main__':

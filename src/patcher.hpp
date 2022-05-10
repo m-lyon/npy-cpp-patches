@@ -11,6 +11,11 @@
 
 #include "src/npy_header.hpp"
 
+// TODO(m-lyon): Move to stateful reading of object, i.e. initialise with filepath & patch_shape.
+//                 then call get_patch with qspace_index & patch_num.
+//               Will need to ensure deconstructor closes the file.
+//               Should make filepath & patch_shape constants to ensure object is not
+//                 reused for different file.
 
 /**
  * @brief Patcher object
@@ -26,29 +31,29 @@ class Patcher{
     std::vector<size_t> data_shape, qspace_index, patch_shape, patch_num;
     std::vector<size_t> num_patches, padding, data_strides, patch_strides, shifts;
     size_t patch_size, start, pos;
+    bool has_run = false;
     char* buf;
-    void set_init_vars(const std::string&, const std::vector<size_t>&, const std::vector<size_t>&,
-                       const std::vector<size_t>&);
-    void set_runtime_vars();
+    void set_init_vars(const std::string&, const std::vector<size_t>&, const std::vector<size_t>&);
+    void set_runtime_vars(size_t);
+    void set_patch_numbers(size_t);
     void set_patch_size();
     void open_file();
     void set_padding();
     void set_strides();
     void set_shift_lengths();
-    void set_num_patches();
+    void set_num_of_patches();
     void move_stream_to_start();
     void read_patch();
     void read_nd_slice(const unsigned int);
     void read_slice();
     void sanity_check();
-    const bool debug = false;
 
   public:
     Patcher();
     std::vector<T> get_patch(const std::string&, const std::vector<size_t>&, std::vector<size_t>,
-                             std::vector<size_t>);
+                             size_t);
     void debug_vars(const std::string&, const std::vector<size_t>&, std::vector<size_t>,
-                    std::vector<size_t>);
+                    size_t);
     size_t get_patch_size();
     size_t get_stream_start();
     std::vector<size_t> get_data_shape();
@@ -56,6 +61,7 @@ class Patcher{
     std::vector<size_t> get_data_strides();
     std::vector<size_t> get_patch_strides();
     std::vector<size_t> get_shift_lengths();
+    std::vector<size_t> get_patch_numbers();
 };
 
 
@@ -73,22 +79,16 @@ Patcher<T>::Patcher() {}
  * @param pnum patch number for each patch dimension
  */
 template<typename T>
-void Patcher<T>::set_init_vars(
-    const std::string& fpath,
-    const std::vector<size_t>& qidx,
-    const std::vector<size_t>& pshape,
-    const std::vector<size_t>& pnum
-) {
+void Patcher<T>::set_init_vars(const std::string& fpath, const std::vector<size_t>& qidx,
+                               const std::vector<size_t>& pshape) {
     filepath = fpath;
     qspace_index = qidx;
     patch_shape = pshape;
     std::reverse(patch_shape.begin(), patch_shape.end());
-    patch_num = pnum;
-    std::reverse(patch_num.begin(), patch_num.end());
 
     // Init/reset patch object
     set_patch_size();
-    if (patch.size() > 0) {
+    if (has_run) {
         patch.clear();
     }
     patch.resize(patch_size, 0);
@@ -255,12 +255,57 @@ std::vector<size_t> Patcher<T>::get_patch_strides() {
  * @tparam T datatype of data found within filepath
  */
 template<typename T>
-void Patcher<T>::set_num_patches() {
+void Patcher<T>::set_num_of_patches() {
     num_patches.resize(data_shape.size() - 1);
     for (size_t i = 0; i < num_patches.size(); i++) {
         num_patches[i] = (data_shape[i] + padding[2*i] + padding[(2*i)+1]) / patch_shape[i];
     }
 }
+
+
+/**
+ * @brief Converts patch number into path number across each dimension
+ * 
+ * @tparam T datatype of data found within filepath
+ * @param pnum Patch number to be converted to patch num in each dimension
+ */
+template<typename T>
+void Patcher<T>::set_patch_numbers(size_t pnum) {
+    if (has_run) {
+        patch_num.clear();
+    }
+    patch_num.resize(num_patches.size(), 0);
+
+    // Get patch number strides
+    std::vector<size_t> patch_num_strides(num_patches.size(), 1);
+    for (size_t i = 1; i < num_patches.size(); i++) {
+        patch_num_strides[i] = patch_num_strides[i - 1] * num_patches[i - 1];
+    }
+
+    // Calculate patch number in each dimension
+    for (size_t i = num_patches.size() - 1; i >= 0; i--) {
+        patch_num[i] = pnum / patch_num_strides[i];
+        pnum -= patch_num[i] * patch_num_strides[i];
+        if (pnum == 0) {
+            break;
+        }
+    }
+}
+
+
+/**
+ * @brief Gets the patch number object
+ * 
+ * @tparam T datatype of data found within filepath
+ * @return std::vector<size_t> Patch number for each dimension
+ */
+template<typename T>
+std::vector<size_t> Patcher<T>::get_patch_numbers() {
+    std::vector<size_t> out(patch_num.size());
+    std::reverse_copy(patch_num.begin(), patch_num.end(), out.begin());
+    return out;
+}
+
 
 /**
  * @brief Moves stream pointer to start of patch
@@ -329,10 +374,11 @@ std::vector<size_t> Patcher<T>::get_shift_lengths() {
  * @tparam T datatype of data found within filepath
  */
 template<typename T>
-void Patcher<T>::set_runtime_vars() {
+void Patcher<T>::set_runtime_vars(size_t pnum) {
     set_padding();
     set_strides();
-    set_num_patches();
+    set_num_of_patches();
+    set_patch_numbers(pnum);
     set_shift_lengths();
 }
 
@@ -428,7 +474,7 @@ std::vector<size_t> Patcher<T>::get_data_shape() {
  * @param fpath filepath for .npy data file
  * @param qidx qspace index (0th index in file)
  * @param pshape patch shape
- * @param pnum patch number for each patch dimension
+ * @param pnum patch number
  * @return std::vector<T> Patch data
  */
 template<typename T>
@@ -436,13 +482,14 @@ std::vector<T> Patcher<T>::get_patch(
     const std::string& fpath,
     const std::vector<size_t>& qidx,
     std::vector<size_t> pshape,
-    std::vector<size_t> pnum
+    size_t pnum
 ) {
-    set_init_vars(fpath, qidx, pshape, pnum);
+    set_init_vars(fpath, qidx, pshape);
     open_file();
-    set_runtime_vars();
+    set_runtime_vars(pnum);
     read_patch();
     sanity_check();
+    has_run = true;
 
     return patch;
 }
@@ -452,13 +499,14 @@ void Patcher<T>::debug_vars(
     const std::string& fpath,
     const std::vector<size_t>& qidx,
     std::vector<size_t> pshape,
-    std::vector<size_t> pnum
+    size_t pnum
 ) {
-    set_init_vars(fpath, qidx, pshape, pnum);
+    set_init_vars(fpath, qidx, pshape);
     open_file();
-    set_runtime_vars();
+    set_runtime_vars(pnum);
     move_stream_to_start();
     sanity_check();
+    has_run = true;
 }
 
 #endif  // PATCHER_HPP_

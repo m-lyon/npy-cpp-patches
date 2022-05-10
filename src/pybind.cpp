@@ -14,6 +14,7 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("debug_vars", &Patcher<double>::debug_vars, "Initialise vars for debug")
         .def("get_patch", &Patcher<double>::get_patch, "Read a patch from file")
         .def("get_data_strides", &Patcher<double>::get_data_strides, "Get the data strides")
+        .def("get_patch_numbers", &Patcher<double>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<double>::get_patch_strides, "Get the patch strides")
         .def("get_shift_lengths", &Patcher<double>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<double>::get_stream_start,
@@ -26,6 +27,7 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("debug_vars", &Patcher<float>::debug_vars, "Initialise vars for debug")
         .def("get_patch", &Patcher<float>::get_patch, "Read a patch from file")
         .def("get_data_strides", &Patcher<float>::get_data_strides, "Get the data strides")
+        .def("get_patch_numbers", &Patcher<float>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<float>::get_patch_strides, "Get the patch strides")
         .def("get_shift_lengths", &Patcher<float>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<float>::get_stream_start,
@@ -38,6 +40,7 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("debug_vars", &Patcher<int>::debug_vars, "Initialise vars for debug")
         .def("get_patch", &Patcher<int>::get_patch, "Read a patch from file")
         .def("get_data_strides", &Patcher<int>::get_data_strides, "Get the data strides")
+        .def("get_patch_numbers", &Patcher<int>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<int>::get_patch_strides, "Get the patch strides")
         .def("get_shift_lengths", &Patcher<int>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<int>::get_stream_start,
@@ -50,6 +53,7 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("debug_vars", &Patcher<int64_t>::debug_vars, "Initialise vars for debug")
         .def("get_patch", &Patcher<int64_t>::get_patch, "Read a patch from file")
         .def("get_data_strides", &Patcher<int64_t>::get_data_strides, "Get the data strides")
+        .def("get_patch_numbers", &Patcher<int64_t>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<int64_t>::get_patch_strides, "Get the patch strides")
         .def("get_shift_lengths", &Patcher<int64_t>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<int64_t>::get_stream_start,

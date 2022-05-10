@@ -20,9 +20,9 @@ with open(path.join(this_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='cpp-npy-patcher',
+    name='npy-patcher',
     version=version,
-    description='C++ based NumPy N-dimesional patcher.',
+    description='C++ based NumPy N-Dimesional patch extraction.',
     author='Matthew Lyon',
     author_email='matthewlyon18@gmail.com',
     long_description=long_description,
