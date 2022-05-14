@@ -25,6 +25,8 @@ setup(
     description='C++ based NumPy N-Dimesional patch extraction.',
     author='Matthew Lyon',
     author_email='matthewlyon18@gmail.com',
+    url='https://https://github.com/m-lyon/npy-cpp-patches',
+    download_url=f'https://https://github.com/m-lyon/npy-cpp-patches/archive/v{version}.tar.gz',
     long_description=long_description,
     long_description_content_type='text/markdown',
     python_requires='>=3.6',
