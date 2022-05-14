@@ -9,7 +9,8 @@ ext_modules = [
     Pybind11Extension(
         "npy_patcher",
         sorted(glob("src/*.cpp")),
-        include_dirs=['./']
+        include_dirs=['./'],
+        cxx_std=17
     ),
 ]
 
