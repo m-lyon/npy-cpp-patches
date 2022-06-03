@@ -15,7 +15,7 @@ ext_modules = [
 ]
 
 
-version = '1.0.3'
+version = '1.0.4'
 this_dir = path.abspath(path.dirname(__file__))
 with open(path.join(this_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -26,7 +26,7 @@ setup(
     description='C++ based NumPy N-Dimesional patch extraction.',
     author='Matthew Lyon',
     author_email='matthewlyon18@gmail.com',
-    url='https://https://github.com/m-lyon/npy-cpp-patches',
+    url='https://github.com/m-lyon/npy-cpp-patches',
     download_url=f'https://https://github.com/m-lyon/npy-cpp-patches/archive/v{version}.tar.gz',
     long_description=long_description,
     long_description_content_type='text/markdown',
