@@ -15,7 +15,7 @@ ext_modules = [
 ]
 
 
-version = '1.0.4'
+version = '1.0.5'
 this_dir = path.abspath(path.dirname(__file__))
 with open(path.join(this_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
