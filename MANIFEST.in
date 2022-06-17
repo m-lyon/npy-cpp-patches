@@ -1,1 +1,3 @@
 include src/npy_header.hpp
+include src/patcher.hpp
+include src/pyparse.hpp
