@@ -19,7 +19,15 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("get_shift_lengths", &Patcher<double>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<double>::get_stream_start,
              "Get the patch starting position in stream")
-        .def("get_padding", &Patcher<double>::get_padding, "Get padding list");
+        .def("get_padding", &Patcher<double>::get_padding, "Get padding list")
+        .def(pybind11::pickle(
+                [](const Patcher<double> &p) {
+                    return pybind11::make_tuple();
+                },
+                [](pybind11::tuple t) {
+                    Patcher<double> p;
+                    return p;
+                }));
 
     pybind11::class_<Patcher<float>>(m, "PatcherFloat")
         .def(pybind11::init<>())
@@ -32,7 +40,15 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("get_shift_lengths", &Patcher<float>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<float>::get_stream_start,
              "Get the patch starting position in stream")
-        .def("get_padding", &Patcher<float>::get_padding, "Get padding list");
+        .def("get_padding", &Patcher<float>::get_padding, "Get padding list")
+        .def(pybind11::pickle(
+                [](const Patcher<float> &p) {
+                    return pybind11::make_tuple();
+                },
+                [](pybind11::tuple t) {
+                    Patcher<float> p;
+                    return p;
+                }));
 
     pybind11::class_<Patcher<int>>(m, "PatcherInt")
         .def(pybind11::init<>())
@@ -45,7 +61,15 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("get_shift_lengths", &Patcher<int>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<int>::get_stream_start,
              "Get the patch starting position in stream")
-        .def("get_padding", &Patcher<int>::get_padding, "Get padding list");
+        .def("get_padding", &Patcher<int>::get_padding, "Get padding list")
+        .def(pybind11::pickle(
+                [](const Patcher<int> &p) {
+                    return pybind11::make_tuple();
+                },
+                [](pybind11::tuple t) {
+                    Patcher<int> p;
+                    return p;
+                }));
 
     pybind11::class_<Patcher<int64_t>>(m, "PatcherLong")
         .def(pybind11::init<>())
@@ -58,5 +82,13 @@ PYBIND11_MODULE(npy_patcher, m) {
         .def("get_shift_lengths", &Patcher<int64_t>::get_shift_lengths, "Get the shift lengths")
         .def("get_stream_start", &Patcher<int64_t>::get_stream_start,
              "Get the patch starting position in stream")
-        .def("get_padding", &Patcher<int64_t>::get_padding, "Get padding list");
+        .def("get_padding", &Patcher<int64_t>::get_padding, "Get padding list")
+        .def(pybind11::pickle(
+                [](const Patcher<int64_t> &p) {
+                    return pybind11::make_tuple();
+                },
+                [](pybind11::tuple t) {
+                    Patcher<int64_t> p;
+                    return p;
+                }));
 }
