@@ -6,6 +6,7 @@
 #define NPY_HEADER_HPP_
 
 #include <iostream>  // std::cout
+#include <array> // std::array
 #include <cstring>  // std::size_t
 #include <vector>  // std::vector
 #include <tuple>  // std::get, std::tie
@@ -119,9 +120,9 @@ struct has_typestring<int64_t>{
 
 // unsigned ints specialisations
 template<>
-struct has_typestring<unsigned int16_t>{
+struct has_typestring<unsigned short>{
     static const bool value = true;
-    static constexpr dtype_t dtype = {host_endian_char, 'u', sizeof(unsigned int16_t)};
+    static constexpr dtype_t dtype = {host_endian_char, 'u', sizeof(unsigned short)};
 };
 
 template<>
@@ -131,9 +132,9 @@ struct has_typestring<unsigned int>{
 };
 
 template<>
-struct has_typestring<unsigned int64_t>{
+struct has_typestring<unsigned long>{
     static const bool value = true;
-    static constexpr dtype_t dtype = {host_endian_char, 'u', sizeof(unsigned int64_t)};
+    static constexpr dtype_t dtype = {host_endian_char, 'u', sizeof(unsigned long)};
 };
 
 // char specialisations
