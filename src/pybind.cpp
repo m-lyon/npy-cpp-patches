@@ -4,15 +4,19 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include "src/patcher.hpp"
 
+#include "src/patcher.hpp"
 
 PYBIND11_MODULE(npy_patcher, m) {
     pybind11::class_<Patcher<double>>(m, "PatcherDouble")
         .def(pybind11::init<>())
         .def("get_data_shape", &Patcher<double>::get_data_shape, "Get the data shape")
-        .def("debug_vars", &Patcher<double>::debug_vars, "Initialise vars for debug")
-        .def("get_patch", &Patcher<double>::get_patch, "Read a patch from file")
+        .def("debug_vars", &Patcher<double>::debug_vars, pybind11::arg("fpath"),
+             pybind11::arg("qidx"), pybind11::arg("pshape"), pybind11::arg("pstride"),
+             pybind11::arg("pnum"), "Initialise vars for debug")
+        .def("get_patch", &Patcher<double>::get_patch, pybind11::arg("fpath"),
+             pybind11::arg("qidx"), pybind11::arg("pshape"), pybind11::arg("pstride"),
+             pybind11::arg("pnum"), "Read a patch from file")
         .def("get_data_strides", &Patcher<double>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<double>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<double>::get_patch_strides, "Get the patch strides")
@@ -24,8 +28,12 @@ PYBIND11_MODULE(npy_patcher, m) {
     pybind11::class_<Patcher<float>>(m, "PatcherFloat")
         .def(pybind11::init<>())
         .def("get_data_shape", &Patcher<float>::get_data_shape, "Get the data shape")
-        .def("debug_vars", &Patcher<float>::debug_vars, "Initialise vars for debug")
-        .def("get_patch", &Patcher<float>::get_patch, "Read a patch from file")
+        .def("debug_vars", &Patcher<float>::debug_vars, pybind11::arg("fpath"),
+             pybind11::arg("qidx"), pybind11::arg("pshape"), pybind11::arg("pstride"),
+             pybind11::arg("pnum"), "Initialise vars for debug")
+        .def("get_patch", &Patcher<float>::get_patch, pybind11::arg("fpath"), pybind11::arg("qidx"),
+             pybind11::arg("pshape"), pybind11::arg("pstride"), pybind11::arg("pnum"),
+             "Read a patch from file")
         .def("get_data_strides", &Patcher<float>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<float>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<float>::get_patch_strides, "Get the patch strides")
@@ -37,8 +45,12 @@ PYBIND11_MODULE(npy_patcher, m) {
     pybind11::class_<Patcher<int>>(m, "PatcherInt")
         .def(pybind11::init<>())
         .def("get_data_shape", &Patcher<int>::get_data_shape, "Get the data shape")
-        .def("debug_vars", &Patcher<int>::debug_vars, "Initialise vars for debug")
-        .def("get_patch", &Patcher<int>::get_patch, "Read a patch from file")
+        .def("debug_vars", &Patcher<int>::debug_vars, pybind11::arg("fpath"), pybind11::arg("qidx"),
+             pybind11::arg("pshape"), pybind11::arg("pstride"), pybind11::arg("pnum"),
+             "Initialise vars for debug")
+        .def("get_patch", &Patcher<int>::get_patch, pybind11::arg("fpath"), pybind11::arg("qidx"),
+             pybind11::arg("pshape"), pybind11::arg("pstride"), pybind11::arg("pnum"),
+             "Read a patch from file")
         .def("get_data_strides", &Patcher<int>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<int>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<int>::get_patch_strides, "Get the patch strides")
@@ -50,8 +62,12 @@ PYBIND11_MODULE(npy_patcher, m) {
     pybind11::class_<Patcher<int64_t>>(m, "PatcherLong")
         .def(pybind11::init<>())
         .def("get_data_shape", &Patcher<int64_t>::get_data_shape, "Get the data shape")
-        .def("debug_vars", &Patcher<int64_t>::debug_vars, "Initialise vars for debug")
-        .def("get_patch", &Patcher<int64_t>::get_patch, "Read a patch from file")
+        .def("debug_vars", &Patcher<int64_t>::debug_vars, pybind11::arg("fpath"),
+             pybind11::arg("qidx"), pybind11::arg("pshape"), pybind11::arg("pstride"),
+             pybind11::arg("pnum"), "Initialise vars for debug")
+        .def("get_patch", &Patcher<int64_t>::get_patch, pybind11::arg("fpath"),
+             pybind11::arg("qidx"), pybind11::arg("pshape"), pybind11::arg("pstride"),
+             pybind11::arg("pnum"), "Read a patch from file")
         .def("get_data_strides", &Patcher<int64_t>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<int64_t>::get_patch_numbers, "Get the patch numbers")
         .def("get_patch_strides", &Patcher<int64_t>::get_patch_strides, "Get the patch strides")

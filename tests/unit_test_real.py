@@ -21,10 +21,11 @@ def pretty_str_array(arr):
         str(arr[-1]).ljust(3, ' '),
     )
 
+
 def pretty_str_index(first, last, maxlen=3, comma=True):
     if comma:
-        return f'{first}:{last},'.ljust((maxlen*2)+2, ' ')
-    return f'{first}:{last}'.ljust((maxlen*2)+1, ' ')
+        return f'{first}:{last},'.ljust((maxlen * 2) + 2, ' ')
+    return f'{first}:{last}'.ljust((maxlen * 2) + 1, ' ')
 
 
 def get_test_data(filepath):
@@ -35,14 +36,18 @@ def get_test_data(filepath):
     '''
     data_out = np.load(filepath)
     data_out = np.pad(data_out, ((0, 0), (3, 2), (3, 3), (3, 2)))
-    data_dict = {
-        'patch_shape': (10, 10, 10),
+    data_in = {
+        'fpath': filepath,
+        'pshape': (10, 10, 10),
+        'pstride': (10, 10, 10),
+    }
+    data_out = {
         'max_patch_num': (14, 17, 14),
         'data_out': data_out,
         'padding': (0, 0, 3, 2, 3, 3, 3, 2),
     }
 
-    return data_dict
+    return data_in, data_out
 
 
 class RealDataTest(unittest.TestCase):
@@ -50,7 +55,7 @@ class RealDataTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.set_up_vars()
-        self.data_dict = get_test_data(self.filepath)
+        self.data_in, self.data_out = get_test_data(self.filepath)
 
     def set_up_vars(self):
         '''Sets up variables for testing'''
@@ -59,39 +64,34 @@ class RealDataTest(unittest.TestCase):
 
     def run_get_patch(self, pnum, qdx):
         '''Runs patcher call given patch number'''
-        return self.patcher.get_patch(
-            self.filepath,
-            qdx,
-            self.data_dict['patch_shape'],
-            pnum
-        )
+        return self.patcher.get_patch(qidx=qdx, pnum=pnum, **self.data_in)
 
     def test_equality_loop(self):
         '''Tests whether arrays are equal'''
-        max_patch_num = self.data_dict['max_patch_num']
-        patch_shape = self.data_dict['patch_shape']
+        max_patch_num = self.data_out['max_patch_num']
+        patch_shape = self.data_in['pshape']
         pnum = 0
-        for i in range(0, max_patch_num[0]+ 1):
+        for i in range(0, max_patch_num[0] + 1):
             for j in range(0, max_patch_num[1] + 1):
                 for k in range(0, max_patch_num[2] + 1):
                     qdx = generate_qspace_sample()
-                    pshape = (len(qdx), ) + tuple(patch_shape)
+                    pshape = (len(qdx),) + tuple(patch_shape)
                     slice_str = '[ {}, {} {} {}]'.format(
                         pretty_str_array(qdx),
-                        pretty_str_index(i*patch_shape[0], (i+1)*patch_shape[0]),
-                        pretty_str_index(j*patch_shape[1], (j+1)*patch_shape[1]),
-                        pretty_str_index(k*patch_shape[2], (k+1)*patch_shape[2], comma=False),
+                        pretty_str_index(i * patch_shape[0], (i + 1) * patch_shape[0]),
+                        pretty_str_index(j * patch_shape[1], (j + 1) * patch_shape[1]),
+                        pretty_str_index(k * patch_shape[2], (k + 1) * patch_shape[2], comma=False),
                     )
                     with self.subTest(f'Patch: ({i},{j},{k}) data{slice_str}'):
                         patch_str = f'({i},{j},{k})'.ljust(10, ' ')
                         print(f'Patch: {patch_str} data{slice_str}')
                         data_out_test = self.run_get_patch(pnum, qdx)
                         data_out_test = np.array(data_out_test).reshape(pshape)
-                        data_out_true = self.data_dict['data_out'][
+                        data_out_true = self.data_out['data_out'][
                             :,
-                            i*patch_shape[0]:(i+1)*patch_shape[0],
-                            j*patch_shape[1]:(j+1)*patch_shape[1],
-                            k*patch_shape[2]:(k+1)*patch_shape[2],
+                            i * patch_shape[0] : (i + 1) * patch_shape[0],
+                            j * patch_shape[1] : (j + 1) * patch_shape[1],
+                            k * patch_shape[2] : (k + 1) * patch_shape[2],
                         ][qdx, ...]
                         self.assertTrue(
                             np.array_equal(data_out_test, data_out_true),
