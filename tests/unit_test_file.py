@@ -23,6 +23,7 @@ def get_test_data_one(filepath):
         'pstride': (3, 3),
         'qidx': [0],
         'pnum': 1,
+        'padding': [],
     }
     data_out = {
         'padding': (1, 0, 1, 0),
@@ -51,6 +52,7 @@ def get_test_data_two(filepath):
         'pstride': [3, 3],
         'qidx': np.array([0, 5, 6]),
         'pnum': 2,
+        'padding': [0, 0, 0, 0],
     }
     data_out = {
         'padding': (1, 0, 1, 0),

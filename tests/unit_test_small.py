@@ -21,6 +21,7 @@ def get_test_data_one(filepath):
         'pstride': (3, 3),
         'qidx': (0,),
         'pnum': 0,
+        'padding': [],
     }
     data_out = {'padding': (0, 0, 0, 0), 'data_out': data_out}
 
@@ -43,6 +44,7 @@ def get_test_data_two(filepath):
         'pstride': (3, 3),
         'qidx': [0],
         'pnum': 1,
+        'padding': [],
     }
     data_out = {
         'padding': (1, 0, 1, 0),
@@ -71,6 +73,7 @@ def get_test_data_three(filepath):
         'pstride': [3, 3],
         'qidx': np.array([0, 5, 6]),
         'pnum': 2,
+        'padding': [],
     }
     data_out = {
         'padding': (1, 0, 1, 0),
@@ -98,6 +101,7 @@ def get_test_data_four(filepath):
         'pshape': (3, 10, 5),
         'pstride': (3, 10, 5),
         'pnum': 55,
+        'padding': [],
     }
     data_out = {
         'data_out': data_out_final,
@@ -130,6 +134,7 @@ def get_test_data_five(filepath):
         'pstride': (6, 10, 5, 3),
         'qidx': np.array([5, 0]),
         'pnum': 4,
+        'padding': [],
     }
     data_out = {
         'data_out': data_out_final,

@@ -21,24 +21,26 @@ def get_test_data_2d(filepath):
     pshape = [3, 3]
     qidx = np.array([0, 5, 6])
     np.save(filepath, data_in, allow_pickle=False)
+    extra_padding = ((1, 3), (6, 4))
+    extra_padding = ((2, 0), (1, 3))
     data_in_dict = {
         'fpath': filepath,
         'pshape': pshape,
         'pstride': [2, 2],
         'qidx': qidx,
-        'padding': [],
+        'padding': list(sum(extra_padding, ())),
     }
-    data_out = np.pad(data_in, ((0, 0), (0, 0), (0, 0)))
+    data_out = np.pad(data_in, ((0, 0),) + extra_padding)
     data_out = view_as_windows(
         data_out,
-        (9,) + tuple(pshape),
-        (9,) + tuple(data_in_dict['pstride']),
+        (len(data_in),) + tuple(pshape),
+        (len(data_in),) + tuple(data_in_dict['pstride']),
     )
-    data_out = data_out.reshape((4, 9) + tuple(pshape))
+    data_out = data_out.flatten().reshape((-1, len(data_in)) + tuple(pshape))
     data_out = data_out[:, qidx, ...]
     data_out_dict = {
         'pnums': 4,
-        'padding': (0, 0, 0, 0),
+        'padding': tuple(sum(extra_padding, ())),
         'data_out': data_out,
     }
 

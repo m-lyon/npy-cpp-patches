@@ -40,6 +40,7 @@ def get_test_data(filepath):
         'fpath': filepath,
         'pshape': (10, 10, 10),
         'pstride': (10, 10, 10),
+        'padding': [],
     }
     data_out = {
         'max_patch_num': (14, 17, 14),

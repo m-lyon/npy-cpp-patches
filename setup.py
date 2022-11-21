@@ -10,7 +10,7 @@ ext_modules = [
 ]
 
 
-version = '1.1.0'
+version = '1.2.1'
 this_dir = path.abspath(path.dirname(__file__))
 with open(path.join(this_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -33,4 +33,7 @@ setup(
         'Operating System :: MacOS',
     ],
     ext_modules=ext_modules,
+    packages=['npy_patcher'],
+    package_dir={'npy_patcher': 'src/npy_patcher'},
+    package_data={'npy_patcher': ['__init__.pyi', 'py.typed']},
 )

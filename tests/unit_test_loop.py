@@ -25,6 +25,7 @@ def get_test_data_2d(filepath):
         'pshape': [3, 3],
         'pstride': [3, 3],
         'qidx': np.array([0, 5, 6]),
+        'padding': [],
     }
     data_out = {
         'max_patch_num': (1, 1),
@@ -52,6 +53,7 @@ def get_test_data_3d(filepath):
         'qidx': np.array([6, 0, 2]),
         'pshape': (3, 10, 5),
         'pstride': (3, 10, 5),
+        'padding': [],
     }
     data_out = {
         'max_patch_num': (3, 3, 4),
@@ -79,6 +81,7 @@ def get_test_data_4d(filepath):
         'pshape': (6, 10, 5, 3),
         'pstride': (6, 10, 5, 3),
         'qidx': np.array([5, 0]),
+        'padding': [],
     }
     data_out = {
         'max_patch_num': (0, 0, 3, 1),

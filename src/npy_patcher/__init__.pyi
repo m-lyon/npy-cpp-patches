@@ -12,6 +12,7 @@ class PatcherDouble:
         pshape: Tuple[int, ...],
         pstride: Tuple[int, ...],
         pnum: int,
+        padding: Tuple[int, ...],
     ) -> List[double]: ...
 
 class PatcherFloat:
@@ -23,6 +24,7 @@ class PatcherFloat:
         pshape: Tuple[int, ...],
         pstride: Tuple[int, ...],
         pnum: int,
+        padding: Tuple[int, ...],
     ) -> List[float32]: ...
 
 class PatcherInt:
@@ -34,6 +36,7 @@ class PatcherInt:
         pshape: Tuple[int, ...],
         pstride: Tuple[int, ...],
         pnum: int,
+        padding: Tuple[int, ...],
     ) -> List[int32]: ...
 
 class PatcherLong:
@@ -45,4 +48,5 @@ class PatcherLong:
         pshape: Tuple[int, ...],
         pstride: Tuple[int, ...],
         pnum: int,
+        padding: Tuple[int, ...],
     ) -> List[int64]: ...
