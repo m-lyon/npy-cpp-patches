@@ -203,7 +203,7 @@ void Patcher<T>::set_padding() {
 
     set_extra_padding();
 
-    unsigned int total_pad;
+    unsigned int total_pad, total_size;
     float num;
 
     // Iterate over dimensions
@@ -232,7 +232,31 @@ void Patcher<T>::set_padding() {
         }
 
         // Validate the padding, shape, and stride are still valid.
-        // TODO
+        std::ostringstream oss;
+        if ((padding[i * 2] > patch_shape[i]) || (padding[(i * 2) + 1] > patch_shape[i])) {
+            oss << "Resultant padding in dim " << i << ", ";
+            if ((padding[i * 2] > patch_shape[i])) {
+                oss << "left side (" << padding[i * 2] << ") ";
+            } else {
+                oss << "right side (" << padding[(i * 2) + 1] << ") ";
+            }
+            oss << "is greater than patch shape (" << patch_shape[i] << ").";
+            throw std::runtime_error(oss.str());
+        }
+        total_size = data_shape[i] + padding[i * 2] + padding[(i * 2) + 1];
+        if (total_size < patch_shape[i]) {
+            oss << "Total padded size in dim " << i << " (" << total_size << ") ";
+            oss << "is less than patch size (" << patch_shape[i] << ").";
+            throw std::runtime_error(oss.str());
+        }
+        if ((total_size > patch_shape[i]) &&
+            (((total_size - patch_shape[i]) % patch_stride[i]) != 0)) {
+            oss << "Padding is invalid. total padded size in dim " << i << " (" << total_size;
+            oss << ") ";
+            oss << "while patch shape is " << patch_shape[i] << " and patch stride is ";
+            oss << patch_stride[i];
+            throw std::runtime_error(oss.str());
+        }
     }
 }
 
@@ -503,7 +527,7 @@ void Patcher<T>::read_slice() {
         pos += shifts[0];
     }
     // If in last patch, and right padded region
-    if ((patch_num[0] + 1 == num_patches[0]) && (padding[(2 * 0) + 1] > 0)) {
+    if ((patch_num[0] + 1 == num_patches[0]) && (padding[1] > 0)) {
         buf += patch_byte_strides[0] * padding[1];
     }
 }

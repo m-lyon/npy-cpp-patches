@@ -5,7 +5,7 @@ import numpy as np
 
 from skimage.util import view_as_windows
 
-from npy_patcher import PatcherInt, PatcherLong
+from npy_patcher import PatcherInt
 
 
 def get_test_data_2d(filepath):
@@ -21,8 +21,7 @@ def get_test_data_2d(filepath):
     pshape = [3, 3]
     qidx = np.array([0, 5, 6])
     np.save(filepath, data_in, allow_pickle=False)
-    extra_padding = ((1, 3), (6, 4))
-    extra_padding = ((2, 0), (1, 3))
+    extra_padding = ((2, 0), (2, 2))
     data_in_dict = {
         'fpath': filepath,
         'pshape': pshape,
@@ -39,46 +38,9 @@ def get_test_data_2d(filepath):
     data_out = data_out.flatten().reshape((-1, len(data_in)) + tuple(pshape))
     data_out = data_out[:, qidx, ...]
     data_out_dict = {
-        'pnums': 4,
+        'pnums': 12,
         'padding': tuple(sum(extra_padding, ())),
         'data_out': data_out,
-    }
-
-    return data_in_dict, data_out_dict
-
-
-def get_test_data_3d(filepath):
-    '''Testing: more complex (3D) shapes, differing qspace indexing
-
-    Datatype: long
-    Padding required: (0, 0, 4, 3, 2, 1)
-    '''
-    data_in = np.arange(12 * 33 * 22).reshape(1, 12, 33, 22).astype(np.int64)
-    rand = lambda x: np.random.randint(0, 300, (x, 12, 33, 22), dtype=np.int64)
-    data_in_final = np.concatenate([data_in, rand(1), data_in * 2, rand(3), data_in * 3], axis=0)
-    np.save(filepath, data_in_final, allow_pickle=False)
-    qidx = np.array([6, 0, 2])
-    pshape = (3, 10, 5)
-    data_in_dict = {
-        'fpath': filepath,
-        'qidx': qidx,
-        'pshape': pshape,
-        'pstride': (3, 5, 4),
-        'padding': [],
-    }
-    data_out = np.pad(data_in_final, ((0, 0), (0, 0), (1, 1), (2, 1)))
-    data_out = view_as_windows(
-        data_out,
-        (7,) + tuple(pshape),
-        (7,) + tuple(data_in_dict['pstride']),
-    )
-    pnums = 4 * 6 * 6
-    data_out = data_out.reshape((pnums, 7) + tuple(pshape))
-    data_out = data_out[:, qidx, ...]
-    data_out_dict = {
-        'pnums': pnums,
-        'data_out': data_out,
-        'padding': (0, 0, 1, 1, 2, 1),
     }
 
     return data_in_dict, data_out_dict
@@ -131,13 +93,63 @@ class TestPatcherLoop2D(BaseTestCases.BaseTest):
         self.patcher = PatcherInt()
 
 
-class TestPatcherLoop3D(BaseTestCases.BaseTest):
-    '''2D test case testing each patch'''
+class BaseExceptionsCase:
+    class BaseTest(unittest.TestCase):
+        def setUp(self) -> None:
+            self.filepath = 'test_data_loop_2D.npy'
+            self.data_in_dict, _ = get_test_data_2d(self.filepath)
+            self.patcher = PatcherInt()
+            self.setup_vars()
 
-    def set_up_vars(self):
-        self.filepath = 'test_data_loop_3D.npy'
-        self.setup_func = get_test_data_3d
-        self.patcher = PatcherLong()
+        def setup_vars(self):
+            raise NotImplementedError
+
+        def tearDown(self):
+            os.remove(self.filepath)
+
+
+class TestPatcher2DExceptionOne(BaseExceptionsCase.BaseTest):
+    '''Test Case for asserting that invalid padding is given'''
+
+    def setup_vars(self):
+        self.data_in_dict['padding'][1] = 1
+
+    def test_invalid_padding(self):
+        with self.assertRaises(RuntimeError):
+            self.patcher.get_patch(pnum=0, **self.data_in_dict)
+
+
+class TestPatcher2DExceptionTwo(BaseExceptionsCase.BaseTest):
+    '''Test Case asserting pnum outside range'''
+
+    def setup_vars(self):
+        pass
+
+    def test_invalid_pnum(self):
+        with self.assertRaises(RuntimeError):
+            self.patcher.get_patch(pnum=12, **self.data_in_dict)
+
+
+class TestPatcher2DExceptionThree(BaseExceptionsCase.BaseTest):
+    '''Test Case asserting left side padding is greater/equal to patch shape'''
+
+    def setup_vars(self):
+        self.data_in_dict['padding'][0] = 3
+
+    def test_invalid_left_padding(self):
+        with self.assertRaises(RuntimeError):
+            self.patcher.get_patch(pnum=0, **self.data_in_dict)
+
+
+class TestPatcher2DExceptionFour(BaseExceptionsCase.BaseTest):
+    '''Test Case asserting left side padding is greater/equal to patch shape'''
+
+    def setup_vars(self):
+        self.data_in_dict['padding'][3] = 3
+
+    def test_invalid_right_padding(self):
+        with self.assertRaises(RuntimeError):
+            self.patcher.get_patch(pnum=0, **self.data_in_dict)
 
 
 if __name__ == '__main__':
