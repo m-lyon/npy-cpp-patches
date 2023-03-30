@@ -16,7 +16,9 @@ PYBIND11_MODULE(npy_patcher, m) {
              pybind11::arg("pnum"), pybind11::arg("padding"), "Initialise vars for debug")
         .def("get_patch", &Patcher<double>::get_patch, pybind11::arg("fpath"),
              pybind11::arg("qidx"), pybind11::arg("pshape"), pybind11::arg("pstride"),
-             pybind11::arg("pnum"), pybind11::arg("padding"), "Read a patch from file")
+             pybind11::arg("pnum"), pybind11::arg("padding"),
+             "Read a patch from file, padding is automatically calculated to ensure valid "
+             "extraction. use padding parameter to add additional padding to object")
         .def("get_data_strides", &Patcher<double>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<double>::get_patch_numbers,
              "Get the patch index in each dimension")
@@ -41,7 +43,9 @@ PYBIND11_MODULE(npy_patcher, m) {
              pybind11::arg("pnum"), pybind11::arg("padding"), "Initialise vars for debug")
         .def("get_patch", &Patcher<float>::get_patch, pybind11::arg("fpath"), pybind11::arg("qidx"),
              pybind11::arg("pshape"), pybind11::arg("pstride"), pybind11::arg("pnum"),
-             pybind11::arg("padding"), "Read a patch from file")
+             pybind11::arg("padding"),
+             "Read a patch from file, padding is automatically calculated to ensure valid "
+             "extraction. use padding parameter to add additional padding to object")
         .def("get_data_strides", &Patcher<float>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<float>::get_patch_numbers,
              "Get the patch index in each dimension")
@@ -66,7 +70,9 @@ PYBIND11_MODULE(npy_patcher, m) {
              pybind11::arg("padding"), "Initialise vars for debug")
         .def("get_patch", &Patcher<int>::get_patch, pybind11::arg("fpath"), pybind11::arg("qidx"),
              pybind11::arg("pshape"), pybind11::arg("pstride"), pybind11::arg("pnum"),
-             pybind11::arg("padding"), "Read a patch from file")
+             pybind11::arg("padding"),
+             "Read a patch from file, padding is automatically calculated to ensure valid "
+             "extraction. use padding parameter to add additional padding to object")
         .def("get_data_strides", &Patcher<int>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<int>::get_patch_numbers,
              "Get the patch index in each dimension")
@@ -91,7 +97,9 @@ PYBIND11_MODULE(npy_patcher, m) {
              pybind11::arg("pnum"), pybind11::arg("padding"), "Initialise vars for debug")
         .def("get_patch", &Patcher<int64_t>::get_patch, pybind11::arg("fpath"),
              pybind11::arg("qidx"), pybind11::arg("pshape"), pybind11::arg("pstride"),
-             pybind11::arg("pnum"), pybind11::arg("padding"), "Read a patch from file")
+             pybind11::arg("pnum"), pybind11::arg("padding"),
+             "Read a patch from file, padding is automatically calculated to ensure valid "
+             "extraction. use padding parameter to add additional padding to object")
         .def("get_data_strides", &Patcher<int64_t>::get_data_strides, "Get the data strides")
         .def("get_patch_numbers", &Patcher<int64_t>::get_patch_numbers,
              "Get the patch index in each dimension")
