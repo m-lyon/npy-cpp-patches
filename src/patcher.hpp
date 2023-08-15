@@ -46,12 +46,13 @@ class Patcher {
     std::vector<size_t> data_shape, qspace_index, patch_shape, patch_stride, patch_num;
     std::vector<size_t> num_patches, padding, data_strides, patch_byte_strides, shifts;
     std::vector<size_t> extra_padding;
+    std::vector<size_t> patch_num_offset;
     size_t patch_size, start, pos;
     bool has_run = false;
     char *buf;
     void set_init_vars(const std::string &, const std::vector<size_t> &,
                        const std::vector<size_t> &, const std::vector<size_t> &,
-                       const std::vector<size_t> &);
+                       const std::vector<size_t> &, const std::vector<size_t> &);
     void set_runtime_vars(size_t);
     void set_patch_numbers(size_t);
     void set_patch_size();
@@ -65,14 +66,15 @@ class Patcher {
     void read_nd_slice(const unsigned int);
     void read_slice();
     void set_extra_padding();
+    void set_patch_num_offset();
     void sanity_check();
 
   public:
     Patcher();
     std::vector<T> get_patch(const std::string &, const std::vector<size_t> &, std::vector<size_t>,
-                             std::vector<size_t>, size_t, std::vector<size_t>);
+                             std::vector<size_t>, size_t, std::vector<size_t>, std::vector<size_t>);
     void debug_vars(const std::string &, const std::vector<size_t> &, std::vector<size_t>,
-                    std::vector<size_t>, size_t, std::vector<size_t>);
+                    std::vector<size_t>, size_t, std::vector<size_t>, std::vector<size_t>);
     size_t get_patch_size();
     size_t get_stream_start();
     std::vector<size_t> get_data_shape();
@@ -100,14 +102,17 @@ template <typename T>
 void Patcher<T>::set_init_vars(const std::string &fpath, const std::vector<size_t> &qidx,
                                const std::vector<size_t> &pshape,
                                const std::vector<size_t> &pstride,
-                               const std::vector<size_t> &padding) {
+                               const std::vector<size_t> &padding,
+                               const std::vector<size_t> &pnum_offset) {
     filepath = fpath;
     qspace_index = qidx;
     patch_shape = pshape;
     patch_stride = pstride;
     extra_padding = padding;
+    patch_num_offset = pnum_offset;
     std::reverse(patch_shape.begin(), patch_shape.end());
     std::reverse(patch_stride.begin(), patch_stride.end());
+    set_patch_num_offset();
 
     // Init/reset patch object
     set_patch_size();
@@ -189,6 +194,18 @@ void Patcher<T>::set_extra_padding() {
         reversed_padding.push_back(extra_padding[r]);
     }
     extra_padding = reversed_padding;
+}
+
+template <typename T>
+void Patcher<T>::set_patch_num_offset() {
+    if (patch_num_offset.empty()) {
+        patch_num_offset = std::vector<size_t>(patch_shape.size(), 0);
+        return;
+    }
+    if (patch_num_offset.size() != patch_shape.size()) {
+        std::runtime_error("Patch num offset given is invalid shape.");
+    }
+    std::reverse(patch_num_offset.begin(), patch_num_offset.end());
 }
 
 /**
@@ -400,9 +417,20 @@ void Patcher<T>::set_patch_numbers(size_t pnum) {
         patch_num_strides[i] = patch_num_strides[i - 1] * num_patches[i - 1];
     }
 
+    // Increase pnum based on pnum_offset
+    for (size_t i = 0; i < patch_num_offset.size() - 1; i++) {
+        if (patch_num_offset[i] >= num_patches[i]) {
+            std::ostringstream oss;
+            oss << "Offset greater or equal to number of patches in dim " << i << ": "
+                << patch_num_offset[i] << " >= " << num_patches[i];
+            throw std::runtime_error(oss.str());
+        }
+        pnum += patch_num_strides[i] * patch_num_offset[i];
+    }
+
     // Calculate patch number in each dimension
     for (size_t i = num_patches.size() - 1; i >= 0; i--) {
-        patch_num[i] = pnum / patch_num_strides[i];
+        patch_num[i] = (pnum / patch_num_strides[i]);
         pnum -= patch_num[i] * patch_num_strides[i];
         if (pnum == 0) {
             break;
@@ -588,8 +616,9 @@ std::vector<size_t> Patcher<T>::get_data_shape() {
 template <typename T>
 std::vector<T> Patcher<T>::get_patch(const std::string &fpath, const std::vector<size_t> &qidx,
                                      std::vector<size_t> pshape, std::vector<size_t> pstride,
-                                     size_t pnum, std::vector<size_t> padding) {
-    set_init_vars(fpath, qidx, pshape, pstride, padding);
+                                     size_t pnum, std::vector<size_t> padding,
+                                     std::vector<size_t> pnum_offset) {
+    set_init_vars(fpath, qidx, pshape, pstride, padding, pnum_offset);
     open_file();
     set_runtime_vars(pnum);
     read_patch();
@@ -602,8 +631,8 @@ std::vector<T> Patcher<T>::get_patch(const std::string &fpath, const std::vector
 template <typename T>
 void Patcher<T>::debug_vars(const std::string &fpath, const std::vector<size_t> &qidx,
                             std::vector<size_t> pshape, std::vector<size_t> pstride, size_t pnum,
-                            std::vector<size_t> padding) {
-    set_init_vars(fpath, qidx, pshape, pstride, padding);
+                            std::vector<size_t> padding, std::vector<size_t> pnum_offset) {
+    set_init_vars(fpath, qidx, pshape, pstride, padding, pnum_offset);
     open_file();
     set_runtime_vars(pnum);
     move_stream_to_start();

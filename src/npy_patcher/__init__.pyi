@@ -1,18 +1,19 @@
 '''NumPy Patcher'''
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
-from numpy import double, float32, int32, int64
+from numpy import double, float32, int32, int64, ndarray
 
 class PatcherDouble:
     def __init__(self) -> None: ...
     def get_patch(
         self,
         fpath: str,
-        qidx: Tuple[int, ...],
-        pshape: Tuple[int, ...],
-        pstride: Tuple[int, ...],
+        qidx: Union[Tuple[int, ...], List[int], ndarray],
+        pshape: Union[Tuple[int, ...], List[int], ndarray],
+        pstride: Union[Tuple[int, ...], List[int], ndarray],
         pnum: int,
-        padding: Tuple[int, ...],
+        padding: Union[Tuple[int, ...], List[int], ndarray] = (),
+        pnum_offset: Union[Tuple[int, ...], List[int], ndarray] = (),
     ) -> List[double]: ...
     def get_patch_size(self) -> List[int]: ...
     def get_padding(self) -> List[int]: ...
@@ -27,11 +28,12 @@ class PatcherFloat:
     def get_patch(
         self,
         fpath: str,
-        qidx: Tuple[int, ...],
-        pshape: Tuple[int, ...],
-        pstride: Tuple[int, ...],
+        qidx: Union[Tuple[int, ...], List[int], ndarray],
+        pshape: Union[Tuple[int, ...], List[int], ndarray],
+        pstride: Union[Tuple[int, ...], List[int], ndarray],
         pnum: int,
-        padding: Tuple[int, ...],
+        padding: Union[Tuple[int, ...], List[int], ndarray] = (),
+        pnum_offset: Union[Tuple[int, ...], List[int], ndarray] = (),
     ) -> List[float32]: ...
     def get_patch_size(self) -> List[int]: ...
     def get_padding(self) -> List[int]: ...
@@ -46,11 +48,12 @@ class PatcherInt:
     def get_patch(
         self,
         fpath: str,
-        qidx: Tuple[int, ...],
-        pshape: Tuple[int, ...],
-        pstride: Tuple[int, ...],
+        qidx: Union[Tuple[int, ...], List[int], ndarray],
+        pshape: Union[Tuple[int, ...], List[int], ndarray],
+        pstride: Union[Tuple[int, ...], List[int], ndarray],
         pnum: int,
-        padding: Tuple[int, ...],
+        padding: Union[Tuple[int, ...], List[int], ndarray] = (),
+        pnum_offset: Union[Tuple[int, ...], List[int], ndarray] = (),
     ) -> List[int32]: ...
     def get_patch_size(self) -> List[int]: ...
     def get_padding(self) -> List[int]: ...
@@ -65,11 +68,12 @@ class PatcherLong:
     def get_patch(
         self,
         fpath: str,
-        qidx: Tuple[int, ...],
-        pshape: Tuple[int, ...],
-        pstride: Tuple[int, ...],
+        qidx: Union[Tuple[int, ...], List[int], ndarray],
+        pshape: Union[Tuple[int, ...], List[int], ndarray],
+        pstride: Union[Tuple[int, ...], List[int], ndarray],
         pnum: int,
-        padding: Tuple[int, ...],
+        padding: Union[Tuple[int, ...], List[int], ndarray] = (),
+        pnum_offset: Union[Tuple[int, ...], List[int], ndarray] = (),
     ) -> List[int64]: ...
     def get_patch_size(self) -> List[int]: ...
     def get_padding(self) -> List[int]: ...
